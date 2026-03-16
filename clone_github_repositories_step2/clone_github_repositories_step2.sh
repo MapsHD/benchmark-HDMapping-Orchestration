@@ -34,8 +34,6 @@ ROS1_REPOS=(
 "benchmark-iG-LIO-to-HDMapping"
 "benchmark-I2EKF-LO-to-HDMapping"
 "benchmark-CT-ICP-to-HDMapping"
-"benchmark-LOAM-Livox-to-HDMapping"
-"benchmark-SLICT-to-HDMapping"
 "benchmark-LIO-EKF-to-HDMapping"
 "benchmark-LeGO-LOAM-to-HDMapping"
 "benchmark-Point-LIO-to-HDMapping"
@@ -50,9 +48,7 @@ ROS2_REPOS=(
 "benchmark-KISS-ICP-to-HDMapping"
 "benchmark-GenZ-ICP-to-HDMapping"
 "benchmark-GLIM-to-HDMapping"
-"benchmark-RESPLE-to-HDMapping"
 "benchmark-lidar_odometry_ros_wrapper-to-HDMapping"
-"benchmark-mola_lidar_odometry-to-HDMapping"
 )
 
 clone_repo() {
@@ -96,8 +92,6 @@ ROS1_ALGOS=(
   "ig-lio"
   "i2ekf-lo"
   "ct-icp"
-  "loam"
-  "slict"
   "lio-ekf"
   "lego-loam"
   "point-lio"
@@ -109,9 +103,7 @@ ROS2_ALGOS=(
   "kiss-icp"
   "genz-icp"
   "glim"
-  "resple"
   "lidar_odometry_ros_wrapper"
-  "mola"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do

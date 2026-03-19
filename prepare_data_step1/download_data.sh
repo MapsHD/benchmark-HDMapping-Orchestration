@@ -2,7 +2,6 @@
 
 BASE="https://huggingface.co/datasets/kubchud/kitti_to_ros/resolve/main"
 TARGET="$HOME/hdmapping-benchmark/data"
-OUTDIR="kitti_${SEQ}_ros2"
 
 usage() {
     echo "Usage:"
@@ -15,6 +14,13 @@ usage() {
     echo "  seq00 seq01 seq02 seq04 seq05 seq06 seq07 seq08 seq09 seq10"
     exit 1
 }
+
+if [ ! -d "$TARGET" ]; then
+    echo "Creating directory $TARGET..."
+    mkdir -p "$TARGET"
+else
+    echo "Directory $TARGET already exists, skipping creation."
+fi
 
 SEQ=$1
 
@@ -46,6 +52,8 @@ wget -c $BASE/kitti_${SEQ}_ros1.bag
 wget -c $BASE/kitti_${SEQ}_ros2.zip
 
 echo "Unzipping ROS2 bag..."
+
+OUTDIR="kitti_${SEQ}_ros2"
 
 mkdir -p "$OUTDIR"
 

@@ -1,59 +1,44 @@
 #!/bin/bash
 set -e
 
-DATASET_PATH="$1"
-BASE_OUTPUT_DIR="$2"
+ROS1_BAG="$1"
+OUTPUT_DIR="$2"
 
-if [[ -z "$DATASET_PATH" || -z "$BASE_OUTPUT_DIR" ]]; then
-  echo "Usage: $0 <dataset_path> <base_output_dir>"
+if [[ -z "$ROS1_BAG" || -z "$OUTPUT_DIR" ]]; then
+  echo "Usage: $0 <ros1_bag> <output_dir>"
   exit 1
 fi
 
-DATASET_PATH=$(realpath "$DATASET_PATH")
-BASE_OUTPUT_DIR=$(realpath "$BASE_OUTPUT_DIR")
+ROS1_BAG=$(realpath "$ROS1_BAG")
+OUTPUT_DIR=$(realpath "$OUTPUT_DIR")
 
-DATASET_NAME=$(basename "$DATASET_PATH")
-
-OUTPUT_DIR="$BASE_OUTPUT_DIR/$DATASET_NAME-dataset"
 mkdir -p "$OUTPUT_DIR"
 
-echo "==========================================="
-echo "Running ALL conversions for: $DATASET_NAME"
-echo "Output base directory: $OUTPUT_DIR"
-echo "==========================================="
+BAG_NAME=$(basename "$ROS1_BAG" .bag)
 
-CONVERSION_SCRIPT="./mandeye-convert.sh"
-ROS1_PC_SCRIPT="./livox_bag.sh"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "HDMapping -> ROS1"
-"$CONVERSION_SCRIPT" \
-  "$DATASET_PATH" \
-  "$OUTPUT_DIR" \
-  "hdmapping-to-ros1"
+ROS1_PC_SCRIPT="$SCRIPT_DIR/livox_bag.sh"
+CONVERSION_SCRIPT="$SCRIPT_DIR/mandeye-convert.sh"
+
+echo "==========================================="
+echo "Processing: $BAG_NAME"
+echo "==========================================="
 
 echo "ROS1 -> aggregated pointcloud (-pc)"
 "$ROS1_PC_SCRIPT" \
-  "$OUTPUT_DIR/$DATASET_NAME" \
+  "$ROS1_BAG" \
   "$OUTPUT_DIR"
 
-ORIGINAL_FILE="$OUTPUT_DIR/$DATASET_NAME"
-NEW_FILE="${ORIGINAL_FILE%.bag}"
-
-mv "$ORIGINAL_FILE"-pc.bag "$NEW_FILE"-pc
-DATASET_NAME="$(basename "$NEW_FILE")"
-
-echo "HDMapping -> ROS2"
-"$CONVERSION_SCRIPT" \
-  "$DATASET_PATH" \
-  "$OUTPUT_DIR" \
-  "hdmapping-to-ros2"
+PC_BAG="$OUTPUT_DIR/${BAG_NAME}-pc.bag"
 
 echo "ROS1 -> ROS2"
 "$CONVERSION_SCRIPT" \
-  "$DATASET_PATH" \
+  "$ROS1_BAG" \
   "$OUTPUT_DIR" \
   "ros1-to-ros2"
 
 echo "==========================================="
-echo "ALL conversions finished successfully!"
+echo "DONE"
+echo "PC bag: $PC_BAG"
 echo "==========================================="

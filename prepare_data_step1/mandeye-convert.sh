@@ -66,14 +66,23 @@ ros1-to-ros2)
     IMAGE_NAME="$IMAGE_NAME_ROS2"
     ROS_SETUP="source /opt/ros/humble/setup.bash && source /mandeye_ws/install/setup.bash"
 
-    DATASET_NAME=$(basename "$DATASET_HOST_PATH")
+    DATASET_NAME=$(basename "$DATASET_HOST_PATH" .bag)
 
-    SRC_BAG="$BAG_OUTPUT_CONTAINER/${DATASET_NAME}"
-
+    SRC_BAG="$DATASET_CONTAINER_PATH/${DATASET_NAME}.bag"
     DST_FOLDER="$BAG_OUTPUT_CONTAINER/${DATASET_NAME}-ros2-lidar"
 
-    RUN_CMD="rosbags-convert --src $SRC_BAG --dst $DST_FOLDER"
+    SRC_PC_BAG="$BAG_OUTPUT_CONTAINER/${DATASET_NAME}.bag-pc.bag"
+    DST_PC_FOLDER="$BAG_OUTPUT_CONTAINER/${DATASET_NAME}-ros2"
 
+    RUN_CMD="
+    echo '[MAIN] converting...' &&
+    rosbags-convert --src $SRC_BAG --dst $DST_FOLDER &&
+
+    echo '[PC] converting...' &&
+    if [ -f \"$SRC_PC_BAG\" ]; then
+        rosbags-convert --src $SRC_PC_BAG --dst $DST_PC_FOLDER;
+    fi
+    "
     ;;
 esac
 

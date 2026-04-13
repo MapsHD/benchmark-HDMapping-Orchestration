@@ -35,10 +35,14 @@ ROS1_REPOS=(
 "benchmark-iG-LIO-to-HDMapping"
 "benchmark-I2EKF-LO-to-HDMapping"
 "benchmark-CT-ICP-to-HDMapping"
+"benchmark-LOAM-Livox-to-HDMapping"
 "benchmark-LIO-EKF-to-HDMapping"
 "benchmark-LeGO-LOAM-to-HDMapping"
 "benchmark-Point-LIO-to-HDMapping"
 "benchmark-VoxelMap-to-HDMapping"
+"benchmark-SLICT-to-HDMapping"
+"benchmark-FORM-to-HDMapping"
+"benchmark-C3P-VoxelMap-to-HDMapping"
 )
 
 ROS2_REPOS=(
@@ -58,10 +62,14 @@ ROS1_ALGOS=(
   "ig-lio"
   "i2ekf-lo"
   "ct-icp"
+  "loam"
   "lio-ekf"
   "lego-loam"
   "point-lio"
   "voxel-map"
+  "slict"
+  "form"
+  "c3p-voxelmap"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do
@@ -70,7 +78,11 @@ for i in "${!ROS1_ALGOS[@]}"; do
     OUTPUT="$OUTPUT_DIR/$algo"
     mkdir -p "$OUTPUT"
 
-    INPUT="$ROS1_BAG"
+    if [[ "$algo" == "dlio" || "$algo" == "dlo" || "$algo" == "loam" || "$algo" == "ct-icp" || "$algo" == "lego-loam" || "$algo" == "lio-ekf" ]]; then
+        INPUT="${ROS1_BAG}-pc.bag"
+    else
+        INPUT="$ROS1_BAG"
+    fi
 
     echo "=== Waiting 5 seconds before running $algo ==="
     sleep 5
@@ -97,7 +109,11 @@ for i in "${!ROS2_ALGOS[@]}"; do
     OUTPUT="$OUTPUT_DIR/$algo"
     mkdir -p "$OUTPUT"
 
-    INPUT="$ROS2_BAG_DIR"
+    if [[ "$algo" == "resple" || "$algo" == "superOdom" ]]; then
+        INPUT="${ROS2_BAG_DIR}-lidar"
+    else
+        INPUT="$ROS2_BAG_DIR"
+    fi
 
     echo "=== Waiting 5 seconds before running $algo ==="
     sleep 5

@@ -12,37 +12,48 @@ mkdir -p ~/hdmapping-benchmark
 ```shell
 cd ~/hdmapping-benchmark
 ```
+
 ## Clone the orchestration repository:
 ```shell
 git clone https://github.com/MapsHD/benchmark-HDMapping-Orchestration.git
 ```
-### Available sequences:
 
-seq00 seq01 seq02 seq04 seq05 seq06 seq07 seq08 seq09 seq10
+### Change branch
+```shell
+cd benchmark-HDMapping-Orchestration
+git checkout Bunker-DVI-Dataset-reg-1
+```
+### Available dataset:
 
-The dataset is available here: [KITTI dataset ROS](https://github.com/Jakubach/kitti_to_ros)
+Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/public.php/dav/files/7PgyjbM2CBcakN5/reg-1.bag) (it is part of [Bunker DVI Dataset](https://charleshamesse.github.io/bunker-dvi-dataset)).
+
+File 'reg-1.bag' is an input for further calculations.
+It should be located in '~/hdmapping-benchmark/data'.
 
 ## Make the script executable (if not done yet):
 
 ```shell
-chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/download_data.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/prepare_data_step1.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/mandeye-convert.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/livox_bag.sh 
 ```
-### Run the script with a sequence number:
+### Run the script:
 
 ```shell
-~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/download_data.sh seq00
+cd ~/hdmapping-benchmark/data
 ```
 
-## This will download the following into ~/hdmapping-benchmark/data:
-
-kitti_seq00_ros1.bag
-
-kitti_seq00_ros2.zip – ROS2 bag (automatically unzipped into kitti_seq00_ros2/)
-
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/prepare_data_step1.sh reg-1.bag .
+```
 
 # Step 2 Clone repositores
 
 ## Make the script executable (if not done yet):
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
 
 ```shell
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_repositories_step2/clone_github_repositories_step2.sh
@@ -78,7 +89,7 @@ cd ~/hdmapping-benchmark/data
 ## Run the benchmark script with your ROS1 bag and ROS2 folder:
  
  ```shell
-~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh kitti_seq00_ros1.bag kitti_seq00_ros2/2011_10_03_drive_0027_extract_ros2/ .
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh reg-1.bag reg-1-ros2 .
 ```
 
 ## Result:

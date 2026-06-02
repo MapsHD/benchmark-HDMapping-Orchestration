@@ -73,9 +73,9 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_re
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_repositories_step2/clone_github_repositories_step2.sh
 ```
 After running the script, you will be prompted to enter the branch name to be cloned for the repositories. For the Bunker DVI dataset, enter:
-
+```shell
 Bunker-DVI-Dataset-reg-1
-
+```
 The script will then clone the repositories using the specified branch.
 
 ## Result:

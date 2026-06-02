@@ -30,6 +30,15 @@ Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/publi
 File 'reg-1.bag' is an input for further calculations.
 It should be located in '~/hdmapping-benchmark/data'.
 
+### Prerequisites for Running the Scripts:
+Before running the scripts below, build the required Docker images according to the instructions provided in:
+
+GitHub repository [mandeye_to_bag](github.com/MapsHD/mandeye_to_bag)
+
+GitHub repository [livox_bag_aggregate](github.com/MapsHD/livox_bag_aggregate)
+
+The following scripts assume that these Docker images have already been built.
+
 ## Make the script executable (if not done yet):
 
 ```shell

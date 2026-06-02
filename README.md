@@ -33,9 +33,9 @@ It should be located in '~/hdmapping-benchmark/data'.
 ### Prerequisites for Running the Scripts:
 Before running the scripts below, build the required Docker images according to the instructions provided in:
 
-GitHub repository [mandeye_to_bag](github.com/MapsHD/mandeye_to_bag)
+GitHub repository [mandeye_to_bag](https://github.com/MapsHD/mandeye_to_bag)
 
-GitHub repository [livox_bag_aggregate](github.com/MapsHD/livox_bag_aggregate)
+GitHub repository [livox_bag_aggregate](https://github.com/MapsHD/livox_bag_aggregate)
 
 The following scripts assume that these Docker images have already been built.
 

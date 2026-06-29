@@ -48,7 +48,6 @@ ROS1_REPOS=(
 )
 
 ROS2_REPOS=(
-"benchmark-RESPLE-to-HDMapping"
 "benchmark-SuperOdometry-to-HDMapping"
 "benchmark-KISS-ICP-to-HDMapping"
 "benchmark-GenZ-ICP-to-HDMapping"

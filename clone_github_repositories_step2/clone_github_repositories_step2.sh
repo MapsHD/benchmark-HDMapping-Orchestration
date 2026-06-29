@@ -42,6 +42,8 @@ ROS1_REPOS=(
 "benchmark-FORM-to-HDMapping"
 "benchmark-C3P-VoxelMap-to-HDMapping"
 "benchmark-SLICT-to-HDMapping"
+"benchmark-NV-LIOM-to-HDMapping"
+"benchmark-SE3-LIO-to-HDMapping"
 )
 
 # =======================
@@ -106,6 +108,8 @@ ROS1_ALGOS=(
   "form"
   "c3p-voxelmap"
   "slict"
+  "nv-liom"
+  "se3-lio"
 )
 
 ROS2_ALGOS=(

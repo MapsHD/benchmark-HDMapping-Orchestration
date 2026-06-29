@@ -43,9 +43,12 @@ ROS1_REPOS=(
 "benchmark-SLICT-to-HDMapping"
 "benchmark-FORM-to-HDMapping"
 "benchmark-C3P-VoxelMap-to-HDMapping"
+"benchmark-NV-LIOM-to-HDMapping"
+"benchmark-SE3-LIO-to-HDMapping"
 )
 
 ROS2_REPOS=(
+"benchmark-RESPLE-to-HDMapping"
 "benchmark-SuperOdometry-to-HDMapping"
 "benchmark-KISS-ICP-to-HDMapping"
 "benchmark-GenZ-ICP-to-HDMapping"
@@ -70,6 +73,8 @@ ROS1_ALGOS=(
   "slict"
   "form"
   "c3p-voxelmap"
+  "nv-liom"
+  "se3-lio"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do
@@ -78,11 +83,19 @@ for i in "${!ROS1_ALGOS[@]}"; do
     OUTPUT="$OUTPUT_DIR/$algo"
     mkdir -p "$OUTPUT"
 
-    if [[ "$algo" == "dlio" || "$algo" == "dlo" || "$algo" == "loam" || "$algo" == "ct-icp" || "$algo" == "lego-loam" || "$algo" == "lio-ekf" ]]; then
-        INPUT="${ROS1_BAG}-pc.bag"
-    else
-        INPUT="$ROS1_BAG"
-    fi
+if [[ "$algo" == "dlio" || \
+      "$algo" == "dlo" || \
+      "$algo" == "loam" || \
+      "$algo" == "ct-icp" || \
+      "$algo" == "lego-loam" || \
+      "$algo" == "form" || \
+      "$algo" == "nv-liom" || \
+      "$algo" == "se3-lio" || \
+      "$algo" == "lio-ekf" ]]; then
+    INPUT="${ROS1_BAG}-pc.bag"
+else
+    INPUT="$ROS1_BAG"
+fi
 
     echo "=== Waiting 5 seconds before running $algo ==="
     sleep 5

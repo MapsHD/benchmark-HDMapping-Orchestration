@@ -54,6 +54,10 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-t
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 ```
 
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
+```
+
 # Option 2
 # Step 1 Prepare data
 

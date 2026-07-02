@@ -47,11 +47,9 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v4.0.0/cmake-4.0.0-l
 
 WORKDIR /workspace
 
-RUN git clone https://github.com/marcinmatecki/HDMapping.git --recursive
+RUN git clone https://github.com/MapsHD/HDMapping.git --recursive
 
 WORKDIR /workspace/HDMapping
-
-RUN git checkout mma/save-tum-no-gui
 
 RUN mkdir -p build && cd build && \
     cmake .. -DBUILD_WITH_PYBIND=ON && \

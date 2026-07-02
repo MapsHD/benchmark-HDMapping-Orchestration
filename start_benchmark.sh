@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 
 set -e
 
@@ -49,10 +49,14 @@ else
 
 fi
 
+sleep 5
+
 echo "=== Step 2: clone_github_repositories_step2 ==="
 cd "$REPO_DIR/clone_github_repositories_step2"
 chmod +x *.sh
 ./clone_github_repositories_step2.sh Bunker-DVI-Dataset-reg-1
+
+sleep 5
 
 echo "=== Step 3: run_benchmark_step3 ==="
 cd "$REPO_DIR/run_benchmark_step3"
@@ -64,10 +68,14 @@ chmod +x *.sh
 
 echo "=== DONE ==="
 
+sleep 5
+
 echo "=== Step 4: conversion_tum_step4 ==="
 cd "$REPO_DIR/conversion_tum_step4"
 chmod +x *.sh
 ./run_tum_step4.sh
+
+sleep 5
 
 echo "=== Step 5: evo_step5 ==="
 cd "$REPO_DIR/evo_step5"

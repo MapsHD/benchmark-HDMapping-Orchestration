@@ -3,7 +3,7 @@
 set -e
 
 DATA_DIR=~/hdmapping-benchmark/data
-REPO_DIR=~/hdmapping-benchmark/data/benchmark-HDMapping-Orchestration
+REPO_DIR=~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
 
 cd "$DATA_DIR"
 

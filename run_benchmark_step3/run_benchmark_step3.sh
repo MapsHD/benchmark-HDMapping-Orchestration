@@ -45,6 +45,8 @@ ROS1_REPOS=(
 "benchmark-C3P-VoxelMap-to-HDMapping"
 "benchmark-NV-LIOM-to-HDMapping"
 "benchmark-SE3-LIO-to-HDMapping"
+"benchmark-DALI_SLAM-to-HDMapping"
+"benchmark-Voxel-SLAM-to-HDMapping"
 )
 
 ROS2_REPOS=(
@@ -52,6 +54,8 @@ ROS2_REPOS=(
 "benchmark-KISS-ICP-to-HDMapping"
 "benchmark-GenZ-ICP-to-HDMapping"
 "benchmark-lidar_odometry_ros_wrapper-to-HDMapping"
+"benchmark-EllipseLIO-to-HDMapping" 
+"benchmark-D-LIO-to-HDMapping"
 "benchmark-GLIM-to-HDMapping"
 )
 
@@ -74,6 +78,8 @@ ROS1_ALGOS=(
   "c3p-voxelmap"
   "nv-liom"
   "se3-lio"
+  "dalislam"
+  "voxelslam"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do
@@ -90,6 +96,8 @@ if [[ "$algo" == "dlio" || \
       "$algo" == "form" || \
       "$algo" == "nv-liom" || \
       "$algo" == "se3-lio" || \
+      "$algo" == "voxelslam" || \
+      "$algo" == "dalislam" || \
       "$algo" == "lio-ekf" ]]; then
     INPUT="${ROS1_BAG}-pc.bag"
 else
@@ -112,6 +120,8 @@ ROS2_ALGOS=(
   "kiss-icp"
   "genz-icp"
   "lidar_odometry_ros_wrapper"
+#   "ellipselio"
+#   "dlio"
   "glim"
 )
 

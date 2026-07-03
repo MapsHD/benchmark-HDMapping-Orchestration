@@ -87,7 +87,14 @@ clone_repo() {
   echo "Switching $dir_name to branch $branch_name..."
   git fetch
   git checkout "$branch_name"
-  cd ..  
+  # Fast-forward an existing clone to the remote branch — fetch+checkout alone
+  # leaves a stale local branch ("Your branch is behind ..."). --ff-only never
+  # rewrites local commits; it only advances to what origin already has.
+  git pull --ff-only origin "$branch_name" || \
+    echo "WARNING: $dir_name could not be fast-forwarded (local changes?) — using local state"
+  # Pulled commits may bump submodule pointers; materialize them.
+  git submodule update --init --recursive
+  cd ..
 }
 
 echo "=== Cloning ROS1 repositories ==="

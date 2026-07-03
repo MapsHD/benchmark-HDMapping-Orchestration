@@ -20,7 +20,12 @@ fi
 
 cd "$CLONE_DIR" || exit
 
-read -p "Enter the branch name to checkout for all repositories: " BRANCH_NAME
+if [ -n "$1" ]; then
+    BRANCH_NAME="$1"
+    echo "Using branch from CLI: $BRANCH_NAME"
+else
+    read -p "Enter the branch name to checkout for all repositories: " BRANCH_NAME
+fi
 
 # =======================
 # ROS1 repositories
@@ -44,6 +49,10 @@ ROS1_REPOS=(
 "benchmark-SLICT-to-HDMapping"
 "benchmark-NV-LIOM-to-HDMapping"
 "benchmark-SE3-LIO-to-HDMapping"
+"benchmark-DALI_SLAM-to-HDMapping"
+"benchmark-Voxel-SLAM-to-HDMapping"
+"benchmark-LOG-LIO2-to-HDMapping"
+"benchmark-MM-LINS-to-HDMapping"
 )
 
 # =======================
@@ -57,6 +66,8 @@ ROS2_REPOS=(
 "benchmark-lidar_odometry_ros_wrapper-to-HDMapping"
 "benchmark-mola_lidar_odometry-to-HDMapping"
 "benchmark-RESPLE-to-HDMapping"
+"benchmark-EllipseLIO-to-HDMapping" 
+"benchmark-D-LIO-to-HDMapping"
 )
 
 clone_repo() {
@@ -110,16 +121,22 @@ ROS1_ALGOS=(
   "slict"
   "nv-liom"
   "se3-lio"
+  "dalislam"
+  "voxelslam"
+  "log-lio2"
+  "mm-lins"
 )
 
 ROS2_ALGOS=(
-  "superOdom"
+  "superodom"
   "kiss-icp"
   "genz-icp"
   "glim"
   "lidar_odometry_ros_wrapper"
   "mola"
   "resple"
+  "ellipselio"
+  "d-lio"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do

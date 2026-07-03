@@ -1,10 +1,70 @@
 # benchmark-HDMapping-Orchestration
 
+# Option 1
+
+### Available dataset:
+
+Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/public.php/dav/files/7PgyjbM2CBcakN5/reg-1.bag) (it is part of [Bunker DVI Dataset](https://charleshamesse.github.io/bunker-dvi-dataset)).
+
+File 'reg-1.bag' is an input for further calculations.
+It should be located in '~/hdmapping-benchmark/data'.
+
+### Prerequisites for Running the Scripts:
+Before running the scripts below, build the required Docker images according to the instructions provided in:
+
+GitHub repository [mandeye_to_bag](https://github.com/MapsHD/mandeye_to_bag)
+
+GitHub repository [livox_bag_aggregate](https://github.com/MapsHD/livox_bag_aggregate)
+
+The following scripts assume that these Docker images have already been built.
+
+## Create worskpace folder
+```shell
+mkdir -p ~/hdmapping-benchmark
+mkdir -p ~/hdmapping-benchmark/data
+```
+
+## Go to your workspace folder:
+
+```shell
+cd ~/hdmapping-benchmark
+```
+
+## Clone the orchestration repository:
+```shell
+git clone https://github.com/MapsHD/benchmark-HDMapping-Orchestration.git
+```
+
+### Change branch
+```shell
+cd benchmark-HDMapping-Orchestration
+git checkout Bunker-DVI-Dataset-reg-1
+```
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/prepare_data_step1.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/mandeye-convert.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/livox_bag.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_repositories_step2/clone_github_repositories_step2.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4/run_tum_step4.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
+```
+
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
+```
+
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
+```
+
+# Option 2
 # Step 1 Prepare data
 
 ## Create worskpace folder
 ```shell
 mkdir -p ~/hdmapping-benchmark
+mkdir -p ~/hdmapping-benchmark/data
 ```
 
 ## Go to your workspace folder:
@@ -45,6 +105,10 @@ The following scripts assume that these Docker images have already been built.
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/prepare_data_step1.sh 
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/mandeye-convert.sh 
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/livox_bag.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_repositories_step2/clone_github_repositories_step2.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4/run_tum_step4.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
 ```
 ### Run the script:
 
@@ -105,6 +169,43 @@ cd ~/hdmapping-benchmark/data
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh reg-1.bag reg-1-ros2 .
 ```
 
+# Step 4 conversion tum
+
+## Make the script executable (if not done yet):
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4/run_tum_step4.sh
+```
+
+## Change directory to the data folder:
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
+
+## Run the benchmark script with your ROS1 bag and ROS2 folder:
+ 
+ ```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4/run_tum_step4.sh
+```
+# Step 5 evo 
+
+## Make the script executable (if not done yet):
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
+```
+
+## Change directory to the data folder:
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
+
+## Run the benchmark script with your ROS1 bag and ROS2 folder:
+ 
+ ```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
+```
+
 ## Result:
  
 ### After running the script, you will get the following folder:
@@ -122,3 +223,5 @@ scan_lio_*.laz
 session.json
 
 trajectory_lio_*.csv
+
+~/hdmapping-benchmark/data/tum

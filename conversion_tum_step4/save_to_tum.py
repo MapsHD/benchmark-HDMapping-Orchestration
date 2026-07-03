@@ -23,7 +23,7 @@ sessions = [
     "/data/se3-lio/output_hdmapping-SE3-LIO/session.json",
     "/data/super-lio/output_hdmapping-super-lio/session.json",
     "/data/superOdom/output_hdmapping-superOdom/session.json",
-    "/data/dlio/output_hdmapping-D-LIO/session.json",
+    "/data/d-lio/output_hdmapping-D-LIO/session.json",
     "/data/ellipselio/output_hdmapping-EllipseLIO/session.json",
     "/data/dalislam/output_hdmapping-DALI_SLAM/session.json",
     "/data/voxelslam/output_hdmapping-Voxel-SLAM/session.json",

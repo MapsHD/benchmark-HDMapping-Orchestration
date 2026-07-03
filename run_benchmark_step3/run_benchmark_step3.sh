@@ -54,8 +54,8 @@ ROS2_REPOS=(
 "benchmark-KISS-ICP-to-HDMapping"
 "benchmark-GenZ-ICP-to-HDMapping"
 "benchmark-lidar_odometry_ros_wrapper-to-HDMapping"
-# "benchmark-EllipseLIO-to-HDMapping" 
-# "benchmark-D-LIO-to-HDMapping"
+"benchmark-EllipseLIO-to-HDMapping" 
+"benchmark-D-LIO-to-HDMapping"
 "benchmark-GLIM-to-HDMapping"
 )
 
@@ -120,8 +120,8 @@ ROS2_ALGOS=(
   "kiss-icp"
   "genz-icp"
   "lidar_odometry_ros_wrapper"
-#   "ellipselio"
-#   "dlio"
+  "ellipselio"
+  "d-lio"
   "glim"
 )
 

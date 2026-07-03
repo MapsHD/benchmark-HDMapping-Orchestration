@@ -56,6 +56,41 @@ def run_evo_rpe(ground_truth: str, traj_files: list[str]) -> pd.DataFrame:
     df = df.sort_values("method")
     return df
 
+def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
+    valid_files = []
+
+    for f in sorted(traj_files):
+        if os.path.isfile(f) and os.path.getsize(f) > 0:
+            valid_files.append(f)
+        else:
+            print(f"Skipping empty file: {f}")
+
+    if not valid_files:
+        print("No valid trajectory files found.")
+        return
+
+    cmd = [
+        "evo_traj",
+        "tum",
+        *valid_files,
+        "-a",
+        "--ref", ground_truth,
+        "--plot_mode", "xy",
+        "-p",
+    ]
+
+    env = os.environ.copy()
+    env["HOME"] = "/data"
+    env["XDG_CONFIG_HOME"] = "/data/.config"
+
+    result = subprocess.run(
+        cmd,
+        text=True,
+        capture_output=True,
+        cwd="/data",
+        env=env
+    )
+
 def df_to_latex_table(df: pd.DataFrame, filename: str, caption: str, table_label: str) -> None:
     latex_df = df.copy()
     numeric_cols = ["max", "mean", "median", "min", "rmse", "sse", "std"]
@@ -128,3 +163,5 @@ if __name__ == "__main__":
         caption="Quantitative evaluation (Relative Pose Error\\cite{grupp2017evo}) of algorithms on bunker dataset. '-' corresponds to results we could not reach. First three rows: our method and ablation study.",
         table_label="table3"
     )
+
+    run_evo_traj_plot(ground_truth, trajectory_files)

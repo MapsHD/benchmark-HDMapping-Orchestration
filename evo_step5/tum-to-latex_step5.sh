@@ -11,6 +11,8 @@ fi
 
 docker run --rm \
     --user 1000:1000 \
+    -e DISPLAY=$DISPLAY \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v ~/hdmapping-benchmark/data/tum:/data \
     -w /data \
     "$IMAGE_NAME" \

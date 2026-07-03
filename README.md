@@ -9,6 +9,11 @@ Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/publi
 File 'reg-1.bag' is an input for further calculations.
 It should be located in '~/hdmapping-benchmark/data'.
 
+## Create worskpace folder
+```shell
+mkdir -p ~/hdmapping-benchmark/data
+```
+
 ### Prerequisites for Running the Scripts:
 Before running the scripts below, build the required Docker images according to the instructions provided in:
 
@@ -21,9 +26,7 @@ The following scripts assume that these Docker images have already been built.
 ## Create worskpace folder
 ```shell
 mkdir -p ~/hdmapping-benchmark
-mkdir -p ~/hdmapping-benchmark/data
 ```
-
 ## Go to your workspace folder:
 
 ```shell
@@ -64,7 +67,6 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark
 ## Create worskpace folder
 ```shell
 mkdir -p ~/hdmapping-benchmark
-mkdir -p ~/hdmapping-benchmark/data
 ```
 
 ## Go to your workspace folder:

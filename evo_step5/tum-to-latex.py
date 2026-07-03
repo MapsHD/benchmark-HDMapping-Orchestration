@@ -79,10 +79,16 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
         "-p",
     ]
 
+    env = os.environ.copy()
+    env["HOME"] = "/data"
+    env["XDG_CONFIG_HOME"] = "/data/.config"
+
     result = subprocess.run(
         cmd,
         text=True,
-        capture_output=True
+        capture_output=True,
+        cwd="/data",
+        env=env
     )
 
 def df_to_latex_table(df: pd.DataFrame, filename: str, caption: str, table_label: str) -> None:

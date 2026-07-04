@@ -2,6 +2,7 @@
 
 IMAGE_NAME="hdmapping_tum"
 DATA_DIR="$HOME/hdmapping-benchmark/data"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "Building image..."
@@ -16,6 +17,7 @@ algorithms=(
     c3p-voxelmap
     ct-icp
     dlio
+    d-lio
     dlo
     faster-lio
     fast-lio
@@ -54,8 +56,11 @@ done
 mkdir -p "$HOME/hdmapping-benchmark/data/tum"
 cp ground_truth.tum "$HOME/hdmapping-benchmark/data/tum/"
 
+# Mount the repo's save_to_tum.py over the copy baked into the image, so the
+# current script always runs (e.g. right after a git pull) without rebuilding.
 docker run --rm -it \
     --user 1000:1000 \
+    -v "$SCRIPT_DIR/save_to_tum.py":/workspace/save_to_tum.py:ro \
     -v ~/hdmapping-benchmark/data:/data \
     "$IMAGE_NAME" bash -c '
 cd /workspace/HDMapping

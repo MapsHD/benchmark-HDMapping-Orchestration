@@ -1,6 +1,6 @@
 # benchmark-HDMapping-Orchestration
 
-# Option 1
+# Option 1 (Full automation)
 
 ### Available dataset:
 

@@ -61,7 +61,7 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 ```
 
-# Option 2
+# Option 2 (Step by step)
 # Step 1 Prepare data
 
 ## Create worskpace folder

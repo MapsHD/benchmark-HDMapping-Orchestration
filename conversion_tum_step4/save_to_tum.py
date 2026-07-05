@@ -22,6 +22,8 @@ sessions = [
     "/data/slict/output_hdmapping-slict/session.json",
     "/data/se3-lio/output_hdmapping-SE3-LIO/session.json",
     "/data/super-lio/output_hdmapping-super-lio/session.json",
+    "/data/mm-lins/output_hdmapping-mm-lins/session.json",
+    "/data/log-lio2/output_hdmapping-log-lio2/session.json",
     "/data/superOdom/output_hdmapping-superOdom/session.json",
     "/data/d-lio/output_hdmapping-D-LIO/session.json",
     "/data/ellipselio/output_hdmapping-EllipseLIO/session.json",

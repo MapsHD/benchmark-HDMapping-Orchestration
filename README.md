@@ -100,3 +100,7 @@ scan_lio_*.laz
 session.json
 
 trajectory_lio_*.csv
+
+# Create tag
+git tag YEAR_MM_DD_benchmark
+git push origin --tags

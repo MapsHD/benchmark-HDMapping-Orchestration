@@ -99,6 +99,24 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
         env=env
     )
 
+    print("\n===== TRAJECTORY EVALUATION (evo_traj) =====")
+
+    if result.returncode == 0:
+        print("Status: SUCCESS (run completed without errors)")
+    else:
+        print("Status: FAILED (error occurred during execution)")
+        print(f"Exit code: {result.returncode}")
+
+    print("\n Program output:")
+    print(result.stdout.strip() if result.stdout else "(no output)")
+
+    if result.stderr:
+        print("\n Error details:")
+        print(result.stderr.strip())
+    else:
+        print("\n Error details:")
+        print("(no error message)")
+
 def df_to_latex_table(df: pd.DataFrame, filename: str, caption: str, table_label: str) -> None:
     latex_df = df.copy()
     numeric_cols = ["max", "mean", "median", "min", "rmse", "sse", "std"]

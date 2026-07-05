@@ -47,6 +47,8 @@ ROS1_REPOS=(
 "benchmark-SE3-LIO-to-HDMapping"
 "benchmark-DALI_SLAM-to-HDMapping"
 "benchmark-Voxel-SLAM-to-HDMapping"
+"benchmark-MM-LINS-to-HDMapping"
+"benchmark-LOG-LIO2-to-HDMapping"
 )
 
 ROS2_REPOS=(
@@ -80,6 +82,8 @@ ROS1_ALGOS=(
   "se3-lio"
   "dalislam"
   "voxelslam"
+  "mm-lins"
+  "log-lio2"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do
@@ -98,6 +102,7 @@ if [[ "$algo" == "dlio" || \
       "$algo" == "se3-lio" || \
       "$algo" == "voxelslam" || \
       "$algo" == "dalislam" || \
+      "$algo" == "log-lio2" || \
       "$algo" == "lio-ekf" ]]; then
     INPUT="${ROS1_BAG}-pc.bag"
 else

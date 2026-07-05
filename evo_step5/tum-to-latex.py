@@ -4,6 +4,14 @@ import glob
 import os
 import numpy as np
 
+bibtex_entry = r"""@misc{grupp2017evo,
+  title={evo: Python package for the evaluation of odometry and SLAM},
+  author={Grupp, Michael},
+  howpublished={\url{https://github.com/MichaelGrupp/evo}},
+  year={2017}
+}
+"""
+
 def run_evo_ape(ground_truth: str, traj_files: list[str]) -> pd.DataFrame:
     results = []
 
@@ -113,15 +121,11 @@ def df_to_latex_table(df: pd.DataFrame, filename: str, caption: str, table_label
     header = " & " + " & ".join(latex_df.columns[1:]) + " \\\\"
 
     rows = []
-    for idx, row in latex_df.iterrows():
+    for _, row in latex_df.iterrows():
         method = row["method"]
         values = " & ".join([str(row[col]) for col in latex_df.columns[1:]])
         line = f"{method} & {values} \\\\"
-        if idx % 2 == 1:
-            line = "\t\t\\rowcolor[HTML]{EFEFEF} \n\t\t" + line
-        else:
-            line = "\t\t" + line
-        rows.append(line)
+        rows.append("\t\t" + line)
 
     latex_table = f"""\\begin{{table}}[]
         \t\\resizebox{{0.5\\textwidth}}{{!}}{{%
@@ -137,31 +141,71 @@ def df_to_latex_table(df: pd.DataFrame, filename: str, caption: str, table_label
 
     with open(filename, "w") as f:
         f.write(latex_table)
-    print(f"Wygenerowany {filename}")
+        f.write("\n\n")
+        f.write(bibtex_entry)
+    print(f"{filename}")
+
+def csv_to_markdown_table(csv_file: str, title: str, output_md: str) -> None:
+    df = pd.read_csv(csv_file)
+
+    cols = ["method", "max", "mean", "median", "min", "rmse", "sse", "std"]
+
+    df = df[cols]
+
+    lines = []
+    lines.append(f"# {title}\n")
+
+    header = "| " + " | ".join(cols) + " |"
+    sep = "| " + " | ".join(["-------------"] * len(cols)) + " |"
+
+    lines.append(header)
+    lines.append(sep)
+
+    for _, row in df.iterrows():
+        values = []
+        for c in cols:
+            v = row[c]
+            if pd.isna(v) or str(v).strip() == "":
+                values.append("-")
+            else:
+                try:
+                    values.append(f"{float(v):.6f}")
+                except:
+                    values.append(str(v))
+
+        lines.append("| " + " | ".join(values) + " |")
+
+    with open(output_md, "w") as f:
+        f.write("\n".join(lines))
+
+    print(f"{output_md}")
 
 if __name__ == "__main__":
     ground_truth = "ground_truth.tum"
     trajectory_files = glob.glob("output*_trajectory_tum.txt")
 
     df_ape = run_evo_ape(ground_truth, trajectory_files)
-    df_ape.to_csv("tabela_ape.csv", index=False)
+    df_ape.to_csv("table_ape.csv", index=False)
     print(df_ape)
 
     df_rpe = run_evo_rpe(ground_truth, trajectory_files)
-    df_rpe.to_csv("tabela_rpe.csv", index=False)
+    df_rpe.to_csv("table_rpe.csv", index=False)
     print(df_rpe)
 
     df_to_latex_table(
         df=df_ape,
-        filename="tabela_ape.tex",
+        filename="table_ape.tex",
         caption="Quantitative evaluation (Absolute Pose Error \\cite{grupp2017evo}) of algorithms on bunker dataset. '-' corresponds to results we could not reach. First three rows: our method and ablation study.",
         table_label="table3"
     )
     df_to_latex_table(
         df=df_rpe,
-        filename="tabela_rpe.tex",
+        filename="table_rpe.tex",
         caption="Quantitative evaluation (Relative Pose Error\\cite{grupp2017evo}) of algorithms on bunker dataset. '-' corresponds to results we could not reach. First three rows: our method and ablation study.",
         table_label="table3"
     )
 
+    csv_to_markdown_table("table_ape.csv", "APE (Absolute Pose Error)", "ape_table_github.md")
+    csv_to_markdown_table("table_rpe.csv", "RPE (Relative Pose Error)", "rpe_table_github.md")
+    
     run_evo_traj_plot(ground_truth, trajectory_files)

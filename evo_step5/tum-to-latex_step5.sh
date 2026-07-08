@@ -1,6 +1,9 @@
 #!/bin/bash
 
 IMAGE_NAME="evo"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+cd "$SCRIPT_DIR" || exit 1
 
 echo "Building Docker image '$IMAGE_NAME'..."
 docker build -t "$IMAGE_NAME" . || exit 1

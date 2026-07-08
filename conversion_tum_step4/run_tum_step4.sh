@@ -4,6 +4,8 @@ IMAGE_NAME="hdmapping_tum"
 DATA_DIR="$HOME/hdmapping-benchmark/data"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+cd "$SCRIPT_DIR" || exit 1
+
 if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     echo "Building image..."
     docker build -t "$IMAGE_NAME" .

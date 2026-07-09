@@ -6,12 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 cd "$SCRIPT_DIR" || exit 1
 
-if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
-    echo "Building image..."
-    docker build -t "$IMAGE_NAME" .
-else
-    echo "Docker image '$IMAGE_NAME' already exists. Skipping build."
-fi
+echo "Building Docker image '$IMAGE_NAME'..."
+docker build -t "$IMAGE_NAME" . 
 
 echo "Creating backups in $DATA_DIR..."
 

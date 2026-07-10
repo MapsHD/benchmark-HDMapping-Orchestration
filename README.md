@@ -1,9 +1,9 @@
+# benchmark-HDMapping-Orchestration
+
 This benchmark calculates APE (Absolute Pose Error), ARE (Absolute Relative Pose Error) and draws registered trajectories.
 It does it in single script.
 
 Switch to other branch e.g. [Bunker-DVI-Dataset-reg-1](https://github.com/MapsHD/benchmark-HDMapping-Orchestration/tree/Bunker-DVI-Dataset-reg-1) to see results.
-
-# benchmark-HDMapping-Orchestration
 
 # Step 1 Prepare data
 

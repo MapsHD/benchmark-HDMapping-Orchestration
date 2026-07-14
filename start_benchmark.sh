@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 
 set -e
 
@@ -81,5 +81,19 @@ echo "=== Step 5: evo_step5 ==="
 cd "$REPO_DIR/evo_step5"
 chmod +x *.sh
 ./tum-to-latex_step5.sh
+
+sleep 5
+
+echo "=== Step 6: overlap_step6 ==="
+cd "$REPO_DIR/overlap_step6"
+
+if command -v python3 >/dev/null 2>&1; then
+    python3 overlap.py
+elif command -v python >/dev/null 2>&1; then
+    python overlap.py
+else
+    echo "ERROR: Nie znaleziono python3 ani python"
+    exit 1
+fi
 
 echo "=== DONE ==="

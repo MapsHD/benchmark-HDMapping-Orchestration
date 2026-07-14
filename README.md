@@ -208,6 +208,23 @@ cd ~/hdmapping-benchmark/data
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
 ```
 
+# Step 6 overlap
+
+## Make the script executable (if not done yet):
+
+## Change directory to the data folder:
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
+
+## Run the benchmark script with your ROS1 bag and ROS2 folder:
+ 
+ ```shell
+python3 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/overlap_step6/overlap.py
+```
+
+
 ## Result:
  
 ### After running the script, you will get the following folder:

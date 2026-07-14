@@ -84,7 +84,7 @@ chmod +x *.sh
 
 sleep 5
 
-echo "=== Step 6: overlap_step5 ==="
+echo "=== Step 6: overlap_step6 ==="
 cd "$REPO_DIR/overlap_step6"
 
 if command -v python3 >/dev/null 2>&1; then

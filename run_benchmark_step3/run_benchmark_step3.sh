@@ -59,6 +59,7 @@ ROS2_REPOS=(
 "benchmark-EllipseLIO-to-HDMapping" 
 # "benchmark-D-LIO-to-HDMapping"
 "benchmark-GLIM-to-HDMapping"
+"benchmark-BIEVR-LIO-to-HDMapping"
 )
 
 ROS1_ALGOS=(
@@ -128,6 +129,7 @@ ROS2_ALGOS=(
   "ellipselio"
 #   "d-lio"
   "glim"
+  "bievr-lio"
 )
 
 for i in "${!ROS2_ALGOS[@]}"; do

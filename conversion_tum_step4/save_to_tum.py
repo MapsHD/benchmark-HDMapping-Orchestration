@@ -29,6 +29,7 @@ sessions = [
     "/data/ellipselio/output_hdmapping-EllipseLIO/session.json",
     "/data/dalislam/output_hdmapping-DALI_SLAM/session.json",
     "/data/voxelslam/output_hdmapping-Voxel-SLAM/session.json",
+    "/data/bievr-lio/output_hdmapping-BIEVR-LIO/session.json",
 ]
 
 result = multi_session_registration_py.run(sessions)

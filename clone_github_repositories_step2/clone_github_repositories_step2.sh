@@ -66,8 +66,9 @@ ROS2_REPOS=(
 "benchmark-lidar_odometry_ros_wrapper-to-HDMapping"
 "benchmark-mola_lidar_odometry-to-HDMapping"
 "benchmark-RESPLE-to-HDMapping"
-"benchmark-EllipseLIO-to-HDMapping" 
+"benchmark-EllipseLIO-to-HDMapping"
 "benchmark-D-LIO-to-HDMapping"
+"benchmark-BIEVR-LIO-to-HDMapping"
 )
 
 clone_repo() {
@@ -144,6 +145,7 @@ ROS2_ALGOS=(
   "resple"
   "ellipselio"
   "d-lio"
+  "bievr-lio"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do

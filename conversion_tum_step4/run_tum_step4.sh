@@ -37,6 +37,7 @@ algorithms=(
     dalislam
     voxelslam
     ellipselio
+    bievr-lio
 )
 
 BACKUP_DIR="$DATA_DIR/backup"

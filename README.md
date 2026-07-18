@@ -82,6 +82,7 @@ git clone https://github.com/MapsHD/mandeye_to_bag.git --recursive
 cd ~/hdmapping-benchmark/mandeye_to_bag
 docker build -t mandeye-ws_noetic --target ros1 .
 docker build -t mandeye-ws_humble --target ros2 .
+./mandeye-convert.sh '/home/janusz/hdmapping-benchmark/data/raw' '/home/janusz/hdmapping-benchmark/data/raw/ros1' hdmapping-to-ros1 
 ```
 
 ### old instruction

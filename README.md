@@ -277,6 +277,8 @@ You should expect following results
 | super-lio | 102.31 | 5.13 | 3899 |
 | superOdom | 101.91 | 22.59 | 17184 |
 
+# Step 5 (Qualitative result - validate resulting map against ground truth)
+
 
 # More info
 Our paper about benchmark

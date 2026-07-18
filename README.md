@@ -282,7 +282,7 @@ Load ~/hdmapping-benchmark/data/super-lio/output_hdmapping-super-lio/session.jso
 with multi_view_tls_registration_step_2 from https://github.com/MapsHD/HDMapping
 and export to point cloud to view in CloudCompare
 
-![plot](plots/capture.bmp)
+![capture](plots/capture.bmp)
 
 You can now compare with ground truth from
 ```
@@ -291,7 +291,7 @@ You can now compare with ground truth from
     └── TLS.laz
 ...
 ```
-
+![capture_gt](plots/capture_gt.bmp)
 
 
 # More info

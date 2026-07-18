@@ -5,6 +5,15 @@
 ### dataset source:
 https://zenodo.org/records/21318128
 
+![calibration-room](dataset_photos/calibration-room.jpeg)
+![flat-room](dataset_photos/flat-room.jpeg)
+![long-corridor](dataset_photos/long-corridor.jpeg)
+![outdoor-urk](dataset_photos/outdoor-urk.jpeg)
+![underground-garage](dataset_photos/underground-garage.jpeg)
+
+
+
+
 # Step 1
 Download first trial https://zenodo.org/records/21318128/files/calibration-room.7z?download=1  
 

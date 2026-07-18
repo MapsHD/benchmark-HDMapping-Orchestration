@@ -121,7 +121,7 @@ Check if You have following data
 ```
 <~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4>/
 ├──Dockerfile
-├──ground_truth.tum (this one can be problematic --> it should be copied from ~/Downloads/calibration-room/trial-1/ground-truth/)
+├──ground_truth.tum (this one can be missing --> it should be copied from ~/Downloads/calibration-room/trial-1/ground-truth/)
 ├──run_tum_step4.sh
 └──save_to_tum.py
 ```

@@ -136,13 +136,13 @@ cd ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
 You should expect following results
 ```
 <~/hdmapping-benchmark/data/tum>/
-├──ape_table_github.md
-├──ground_truth.tum
-├──image.png
-├──output_hdmapping-BIEVR-LIO_trajectory_tum.txt
-├──output_hdmapping-c3p-voxelmap_trajectory_tum.txt
-├──output_hdmapping-ct-icp_trajectory_tum.txt
-├──output_hdmapping-DALI_SLAM_trajectory_tum.txt
+├──ape_table_github.md (Absolute Pose Error for github readme)
+├──ground_truth.tum (ground truth trajectory in TUM format, [ts x y z qx qy qz qw])
+├──image.png (plot of all trajectories)
+├──output_hdmapping-BIEVR-LIO_trajectory_tum.txt (trajectory BIEVR-LIO in TUM format)
+├──output_hdmapping-c3p-voxelmap_trajectory_tum.txt (trajectory c3p-voxelmap in TUM format)
+├──output_hdmapping-ct-icp_trajectory_tum.txt (trajectory ct-icp in TUM format)
+├──output_hdmapping-DALI_SLAM_trajectory_tum.txt (...)
 ├──output_hdmapping-dlio_trajectory_tum.txt
 ├──output_hdmapping-D-LIO_trajectory_tum.txt
 ├──output_hdmapping-dlo_trajectory_tum.txt
@@ -167,13 +167,13 @@ You should expect following results
 ├──output_hdmapping-super-lio_trajectory_tum.txt
 ├──output_hdmapping-superOdom_trajectory_tum.txt
 ├──output_hdmapping-Voxel-SLAM_trajectory_tum.txt
-├──overlap_results.md
-├──overlap_results.tex
-├──rpe_table_github.md
-├──table_ape.csv
-├──table_ape.tex
-├──table_rpe.csv
-└──table_rpe.tex
+├──overlap_results.md (trajectory completness for github readme)
+├──overlap_results.tex (trajectory completness in latex)
+├──rpe_table_github.md (Relative Pose Error for github readme)
+├──table_ape.csv (Absolute Pose Error in csv table)
+├──table_ape.tex (Absolute Pose Error for latex)
+├──table_rpe.csv (Relative Pose Error in csv table)
+└──table_rpe.tex (Relative Pose Error for latex)
 ```
 
 

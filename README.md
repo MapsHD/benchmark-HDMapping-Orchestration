@@ -2,6 +2,12 @@
 
 # branch HUMANOID-LIO-DATASET
 
+### dataset source:
+https://zenodo.org/records/21318128
+
+
+
+### old instruction
 
 # Option 1 (Full automation)
 

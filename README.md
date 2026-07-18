@@ -283,7 +283,7 @@ load
 with multi_view_tls_registration_step_2 from https://github.com/MapsHD/HDMapping
 and export to point cloud to view in CloudCompare
 
-![plot](plots/capture.png)
+![plot](plots/capture.bmp)
 
 
 # More info

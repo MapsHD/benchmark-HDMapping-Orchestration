@@ -9,7 +9,7 @@ https://zenodo.org/records/21318128
 Download first trial https://zenodo.org/records/21318128/files/calibration-room.7z?download=1  
 
 # Step 2 (prepare data)
-Unpack calibration-room.7z
+Unpack calibration-room.7z (later on You can do similar for flat-room.7z, long-corridor.7z, outdoor-urk.7z, underground-garage.7z)
 
 You should see following data structure for calibration-room data collection:
 

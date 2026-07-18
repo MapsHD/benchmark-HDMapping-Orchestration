@@ -179,6 +179,7 @@ You should expect following results
 ## Plot of trajectories from file ~/hdmapping-benchmark/data/tum/image.png
 ![plot](plots/image-HUMANOID-LIO-DATASET.png)
 
+## ape_table_github.md from file ~/hdmapping-benchmark/data/tum/iape_table_github.md
 
 
 # More info

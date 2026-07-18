@@ -67,6 +67,7 @@ You should see following data structure for calibration-room data collection:
 └── image.jpeg (situation view)
 ```
 ## Create worskpace folder and copy raw data (in HDMapping format)
+open new terminal
 ```shell
 mkdir -p ~/hdmapping-benchmark/data/raw
 cd ~/hdmapping-benchmark/data/raw
@@ -74,8 +75,10 @@ cp ~/Downloads/calibration-room/trial-1/hdmapping-raw/* .
 ```
 
 ## Convert data to ROS1 format
+open new terminal
 ```shell
-
+cd ~/hdmapping-benchmark
+git clone https://github.com/MapsHD/mandeye_to_bag.git --recursive
 ```
 
 ### old instruction

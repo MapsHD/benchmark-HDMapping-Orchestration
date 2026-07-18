@@ -132,6 +132,10 @@ cd ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 ```
 
+# Step 4 (results for qualitative and quantitative inetpretation)
+
+
+
 # More info
 Our paper about benchmark
 - https://www.sciencedirect.com/science/article/pii/S2352711026003146

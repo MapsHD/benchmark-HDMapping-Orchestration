@@ -179,7 +179,7 @@ You should expect following results
 ## Plot of trajectories from file ~/hdmapping-benchmark/data/tum/image.png
 ![plot](plots/image-HUMANOID-LIO-DATASET.png)
 
-## ape_table_github.md from file ~/hdmapping-benchmark/data/tum/ape_table_github.md
+## Report from file ~/hdmapping-benchmark/data/tum/ape_table_github.md
 ### APE (Absolute Pose Error)
 
 | method | max | mean | median | min | rmse | sse | std |
@@ -213,7 +213,7 @@ You should expect following results
 | super-lio | 0.107757 | 0.035489 | 0.034076 | 0.012102 | 0.037201 | 5.272670 | 0.011156 |
 | superOdom | 40.822669 | 16.851372 | 16.206119 | 1.852167 | 18.236804 | 5582704.804668 | 6.972249 |
 
-## rpe_table_github.md from file ~/hdmapping-benchmark/data/tum/rpe_table_github.md
+## Report from file ~/hdmapping-benchmark/data/tum/rpe_table_github.md
 ### RPE (Relative Pose Error)
 
 | method | max | mean | median | min | rmse | sse | std |

@@ -116,6 +116,19 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 cp ~/Downloads/calibration-room/trial-1/ground-truth/ground_truth.tum ./conversion_tum_step4
+```
+Check if You have following data
+```
+<~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4>/
+├──Dockerfile
+├──ground_truth.tum (this one can be problematic --> it should be copied)
+├──run_tum_step4.sh
+└──save_to_tum.py
+```
+
+open new terminal
+```shell
+cd ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 ```
 

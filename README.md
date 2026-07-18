@@ -133,6 +133,51 @@ cd ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
 ```
 
 # Step 4 (results for qualitative and quantitative inetpretation)
+You should expect following results
+```
+<~/hdmapping-benchmark/data/tum>/
+├──ape_table_github.md
+├──ground_truth.tum
+├──image.png
+├──output_hdmapping-BIEVR-LIO_trajectory_tum.txt
+├──output_hdmapping-c3p-voxelmap_trajectory_tum.txt
+├──output_hdmapping-ct-icp_trajectory_tum.txt
+├──output_hdmapping-DALI_SLAM_trajectory_tum.txt
+├──output_hdmapping-dlio_trajectory_tum.txt
+├──output_hdmapping-D-LIO_trajectory_tum.txt
+├──output_hdmapping-dlo_trajectory_tum.txt
+├──output_hdmapping-EllipseLIO_trajectory_tum.txt
+├──output_hdmapping-faster-lio_trajectory_tum.txt
+├──output_hdmapping-fast-lio_trajectory_tum.txt
+├──output_hdmapping-form_trajectory_tum.txt
+├──output_hdmapping-genz_trajectory_tum.txt
+├──output_hdmapping-glim_trajectory_tum.txt
+├──output_hdmapping-i2ekf-lo_trajectory_tum.txt
+├──output_hdmapping-ig-lio_trajectory_tum.txt
+├──output_hdmapping-kiss_trajectory_tum.txt
+├──output_hdmapping-lego-loam_trajectory_tum.txt
+├──output_hdmapping-lidar-odometry-ros_trajectory_tum.txt
+├──output_hdmapping-lio-ekf_trajectory_tum.txt
+├──output_hdmapping-log-lio2_trajectory_tum.txt
+├──output_hdmapping-mm-lins_trajectory_tum.txt
+├──output_hdmapping-nv-liom_trajectory_tum.txt
+├──output_hdmapping-point-lio_trajectory_tum.txt
+├──output_hdmapping-SE3-LIO_trajectory_tum.txt
+├──output_hdmapping-slict_trajectory_tum.txt
+├──output_hdmapping-super-lio_trajectory_tum.txt
+├──output_hdmapping-superOdom_trajectory_tum.txt
+├──output_hdmapping-Voxel-SLAM_trajectory_tum.txt
+├──overlap_results.md
+├──overlap_results.tex
+├──rpe_table_github.md
+├──table_ape.csv
+├──table_ape.tex
+├──table_rpe.csv
+└──table_rpe.tex
+```
+
+
+
 
 
 

@@ -5,7 +5,67 @@
 ### dataset source:
 https://zenodo.org/records/21318128
 
+# Step 1
+Download first trial https://zenodo.org/records/21318128/files/calibration-room.7z?download=1  
 
+# Step 2
+Unpack calibration-room.7z
+
+You should see following data structure for calibration-room data collection:
+
+```HUMANOID-LIO-DATASET (single scenario) data structure
+<calibration-room>/
+├── TLS-ground-truth
+│   ├── Leica_ScanStation_P30-P40_Civil_DS.pdf  (documentation for Terrestrial Laser Scanner)
+│   └── TLS.laz (ground truth point cloud from Terrestrial Laser Scanner)
+├── trial-1
+│   ├──ground-truth
+│   │  ├──ground_truth.tum (ground truth trajectory)
+│   │  ├──ground_truth.txt (ground truth trajectory)
+│   │  └──perspective_view.png (perspective view of trajectory)
+│   └──hdmapping-raw (raw data in format of data https://github.com/MapsHD/HDMapping)
+│      ├──imu0000.csv
+│      ├──imu0001.csv
+│      ├──imu0002.csv
+│      ├──...
+│      ├──imu0038.csv
+│      ├──lidar0000.laz
+│      ├──lidar0000.sn
+│      ├──lidar0001.laz
+│      ├──lidar0002.sn
+│      ├──...
+│      ├──lidar0038.laz
+│      ├──lidar0038.sn
+│      ├──status0000.json
+│      ├──status0001.json
+│      ├──status0002.json
+│      ├──...
+│      └──status0038.json
+├── trial-2
+│   ├──ground-truth
+│   │  ├──ground_truth.tum (ground truth trajectory)
+│   │  ├──ground_truth.txt (ground truth trajectory)
+│   │  └──perspective_view.png (perspective view of trajectory)
+│   └──hdmapping-raw (raw data in format of data https://github.com/MapsHD/HDMapping)
+│      ├──imu0000.csv
+│      ├──imu0001.csv
+│      ├──imu0002.csv
+│      ├──...
+│      ├──imu0022.csv
+│      ├──lidar0000.laz
+│      ├──lidar0000.sn
+│      ├──lidar0001.laz
+│      ├──lidar0002.sn
+│      ├──...
+│      ├──lidar0022.laz
+│      ├──lidar0022.sn
+│      ├──status0000.json
+│      ├──status0001.json
+│      ├──status0002.json
+│      ├──...
+│      └──status0022.json
+└── image.jpeg (situation view)
+```
 
 ### old instruction
 

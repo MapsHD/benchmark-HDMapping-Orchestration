@@ -247,6 +247,36 @@ You should expect following results
 | super-lio | 0.050726 | 0.009610 | 0.008319 | 0.000407 | 0.011185 | 0.476540 | 0.005723 |
 | superOdom | 2.050571 | 0.054939 | 0.018117 | 0.000197 | 0.165212 | 458.148122 | 0.155810 |
 
+## overlap_results.md from file ~/hdmapping-benchmark/data/tum/overlap_results.md
+### LIO overlap benchmark (Metric1 - Trajectory completness, Metric2 - percentage of published poses)
+
+| Algorithm | Metric1 [%] | Metric2 [%] | Nodes |
+|-----------|-------------|-------------|-------|
+| BIEVR-LIO | 101.03 | 4.94 | 3757 |
+| DALI_SLAM | 102.55 | 5.02 | 3817 |
+| EllipseLIO | 97.87 | 19.58 | 14889 |
+| SE3-LIO | 101.63 | 4.97 | 3782 |
+| Voxel-SLAM | 100.79 | 4.93 | 3750 |
+| dlio | 29.08 | 14.54 | 11060 |
+| dlo | 77.70 | 3.78 | 2872 |
+| fast-lio | 99.66 | 4.99 | 3798 |
+| faster-lio | 90.29 | 4.52 | 3441 |
+| form | 102.61 | 5.02 | 3819 |
+| genz | 102.45 | 5.01 | 3811 |
+| glim | 29.24 | 1.46 | 1113 |
+| i2ekf-lo | 102.55 | 5.14 | 3908 |
+| ig-lio | 102.52 | 5.14 | 3907 |
+| kiss | 102.11 | 4.99 | 3793 |
+| lego-loam | 101.92 | 1.25 | 949 |
+| lidar-odometry-ros | 102.40 | 5.01 | 3811 |
+| lio-ekf | 102.55 | 5.02 | 3817 |
+| log-lio2 | 94.14 | 4.60 | 3497 |
+| mm-lins | 102.47 | 5.13 | 3899 |
+| point-lio | 102.52 | 5.14 | 3907 |
+| slict | 99.61 | 1.66 | 1266 |
+| super-lio | 102.31 | 5.13 | 3899 |
+| superOdom | 101.91 | 22.59 | 17184 |
+
 
 # More info
 Our paper about benchmark

@@ -289,6 +289,7 @@ You can now compare with ground truth from
 <calibration-room>/
 ├── TLS-ground-truth
     └── TLS.laz
+...
 ```
 
 

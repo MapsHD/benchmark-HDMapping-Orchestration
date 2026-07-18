@@ -284,6 +284,14 @@ and export to point cloud to view in CloudCompare
 
 ![plot](plots/capture.bmp)
 
+You can now compare with ground truth from
+```
+<calibration-room>/
+├── TLS-ground-truth
+    └── TLS.laz
+```
+
+
 
 # More info
 Our paper about benchmark

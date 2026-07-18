@@ -5,10 +5,10 @@
 ### dataset source:
 https://zenodo.org/records/21318128
 
-# Step 1
+# Step 1 (download data)
 Download first trial https://zenodo.org/records/21318128/files/calibration-room.7z?download=1  
 
-# Step 2
+# Step 2 (prepare data)
 Unpack calibration-room.7z
 
 You should see following data structure for calibration-room data collection:

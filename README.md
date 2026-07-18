@@ -66,6 +66,12 @@ You should see following data structure for calibration-room data collection:
 │      └──status0022.json
 └── image.jpeg (situation view)
 ```
+## Create worskpace folder
+```shell
+mkdir -p ~/hdmapping-benchmark/data
+```
+
+
 
 ### old instruction
 

@@ -86,6 +86,13 @@ docker build -t mandeye-ws_humble --target ros2 .
 mv ~/hdmapping-benchmark/data/raw/ros1/raw ../data/reg-1.bag 
 ```
 
+You should see following folders
+```
+<~hdmapping-benchmark/data>/
+├── raw (folder with raw hdmapping data)
+└── reg-1.bag (bugfile for ROS1 - Robot Operating System 1)
+```
+
 ### old instruction
 
 # Option 1 (Full automation)

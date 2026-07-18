@@ -70,7 +70,7 @@ You should see following data structure for calibration-room data collection:
 ```shell
 mkdir -p ~/hdmapping-benchmark/data/raw
 cd ~/hdmapping-benchmark/data/raw
-cp ~/Downloads/calibration-room/trial-1/hdmapping-raw *
+cp ~/Downloads/calibration-room/trial-1/hdmapping-raw/* .
 ```
 
 

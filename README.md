@@ -278,8 +278,7 @@ You should expect following results
 | superOdom | 101.91 | 22.59 | 17184 |
 
 # Step 5 (Qualitative result - validate resulting map against ground truth)
-load 
-~/hdmapping-benchmark/data/super-lio/output_hdmapping-super-lio/session.json
+Load ~/hdmapping-benchmark/data/super-lio/output_hdmapping-super-lio/session.json
 with multi_view_tls_registration_step_2 from https://github.com/MapsHD/HDMapping
 and export to point cloud to view in CloudCompare
 

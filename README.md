@@ -73,7 +73,10 @@ cd ~/hdmapping-benchmark/data/raw
 cp ~/Downloads/calibration-room/trial-1/hdmapping-raw/* .
 ```
 
+## Convert data to ROS1 format
+```shell
 
+```
 
 ### old instruction
 

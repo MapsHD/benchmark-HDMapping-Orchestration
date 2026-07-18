@@ -93,6 +93,24 @@ You should see following folders
 └── reg-1.bag (bugfile for ROS1 - Robot Operating System 1)
 ```
 
+# Step 3 (run benchmark)
+open new terminal
+```shell
+cd ~/hdmapping-benchmark
+git clone https://github.com/MapsHD/benchmark-HDMapping-Orchestration.git
+cd benchmark-HDMapping-Orchestration
+git checkout Bunker-DVI-Dataset-reg-1
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/prepare_data_step1.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/mandeye-convert.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/livox_bag.sh 
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_repositories_step2/clone_github_repositories_step2.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4/run_tum_step4.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
+```
+
 ### old instruction
 
 # Option 1 (Full automation)

@@ -176,8 +176,8 @@ You should expect following results
 └──table_rpe.tex (Relative Pose Error for latex)
 ```
 
-
-
+## Plot of trajectories from file ~/hdmapping-benchmark/data/tum/image.png
+![plot](plots/image-HUMANOID-LIO-DATASET.png)
 
 
 

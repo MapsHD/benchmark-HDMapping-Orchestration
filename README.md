@@ -281,8 +281,9 @@ You should expect following results
 load 
 ~/hdmapping-benchmark/data/super-lio/output_hdmapping-super-lio/session.json
 with multi_view_tls_registration_step_2 from https://github.com/MapsHD/HDMapping
-and export to point cloud
+and export to point cloud to view in CloudCompare
 
+![plot](plots/capture.png)
 
 
 # More info

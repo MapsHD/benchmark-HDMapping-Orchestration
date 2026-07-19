@@ -106,7 +106,7 @@ open new terminal
 cd ~/hdmapping-benchmark
 git clone https://github.com/MapsHD/benchmark-HDMapping-Orchestration.git
 cd benchmark-HDMapping-Orchestration
-git checkout Bunker-DVI-Dataset-reg-1
+git checkout HUMANOID-LIO-DATASET
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/prepare_data_step1.sh 
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/mandeye-convert.sh 
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/prepare_data_step1/livox_bag.sh 

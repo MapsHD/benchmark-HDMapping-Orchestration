@@ -64,14 +64,23 @@ def run_evo_rpe(ground_truth: str, traj_files: list[str]) -> pd.DataFrame:
     df = df.sort_values("method")
     return df
 
-def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
+def run_evo_traj_plot(ground_truth: str, traj_files: list[str], df_ape: pd.DataFrame) -> None:
     valid_files = []
 
     for f in sorted(traj_files):
-        if os.path.isfile(f) and os.path.getsize(f) > 0:
-            valid_files.append(f)
-        else:
+        if not os.path.isfile(f) or os.path.getsize(f) == 0:
             print(f"Skipping empty file: {f}")
+            continue
+
+        method_name = os.path.basename(f) \
+                        .replace("output_hdmapping-", "") \
+                        .replace("_trajectory_tum.txt", "")
+        ape_row = df_ape[df_ape["method"] == method_name]
+        if ape_row.empty or pd.isna(ape_row["mean"].iloc[0]):
+            print(f"Skipping {f}: no overlapping timestamps with ground truth (evo_ape found no match)")
+            continue
+
+        valid_files.append(f)
 
     if not valid_files:
         print("No valid trajectory files found.")
@@ -226,4 +235,4 @@ if __name__ == "__main__":
     csv_to_markdown_table("table_ape.csv", "APE (Absolute Pose Error)", "ape_table_github.md")
     csv_to_markdown_table("table_rpe.csv", "RPE (Relative Pose Error)", "rpe_table_github.md")
     
-    run_evo_traj_plot(ground_truth, trajectory_files)
+    run_evo_traj_plot(ground_truth, trajectory_files, df_ape)

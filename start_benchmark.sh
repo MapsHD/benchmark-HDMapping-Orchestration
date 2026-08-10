@@ -54,7 +54,7 @@ sleep 5
 echo "=== Step 2: clone_github_repositories_step2 ==="
 cd "$REPO_DIR/clone_github_repositories_step2"
 chmod +x *.sh
-./clone_github_repositories_step2.sh Bunker-DVI-Dataset-reg-1
+./clone_github_repositories_step2.sh
 
 sleep 5
 

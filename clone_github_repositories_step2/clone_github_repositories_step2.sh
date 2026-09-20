@@ -53,6 +53,10 @@ ROS1_REPOS=(
 "benchmark-Voxel-SLAM-to-HDMapping"
 "benchmark-LOG-LIO2-to-HDMapping"
 "benchmark-MM-LINS-to-HDMapping"
+"benchmark-SR-LIO-to-HDMapping"
+"benchmark-R-VoxelMap-to-HDMapping"
+"benchmark-PV-LIO-to-HDMapping"
+"benchmark-HDMapping_LIO-to-HDMapping"
 )
 
 # =======================
@@ -69,6 +73,7 @@ ROS2_REPOS=(
 "benchmark-EllipseLIO-to-HDMapping"
 "benchmark-D-LIO-to-HDMapping"
 "benchmark-BIEVR-LIO-to-HDMapping"
+"benchmark-rko_lio-to-HDMapping"
 )
 
 clone_repo() {
@@ -133,6 +138,10 @@ ROS1_ALGOS=(
   "voxelslam"
   "log-lio2"
   "mm-lins"
+  "sr-lio"
+  "r-voxelmap"
+  "pv-lio"
+  "hdmapping-lio"
 )
 
 ROS2_ALGOS=(
@@ -146,12 +155,20 @@ ROS2_ALGOS=(
   "ellipselio"
   "d-lio"
   "bievr-lio"
+  "rko-lio"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do
   algo="${ROS1_ALGOS[$i]}"
   dir="${ROS1_REPOS[$i]}"
   cd "$CLONE_DIR/$dir" || continue
+  # Some repos (e.g. benchmark-HDMapping_LIO-to-HDMapping) ship only a README
+  # describing a manual procedure — nothing to build for those.
+  if [ ! -f Dockerfile ]; then
+    echo "Skipping Docker build for $algo: $dir has no Dockerfile (manual procedure, see its README)."
+    cd "$CLONE_DIR" || exit
+    continue
+  fi
   echo "Building Docker for $algo (ROS1 Noetic)..."
   docker build -t "${algo}_noetic" .
   cd "$CLONE_DIR" || exit

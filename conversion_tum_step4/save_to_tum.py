@@ -30,6 +30,10 @@ sessions = [
     "/data/dalislam/output_hdmapping-DALI_SLAM/session.json",
     "/data/voxelslam/output_hdmapping-Voxel-SLAM/session.json",
     "/data/bievr-lio/output_hdmapping-BIEVR-LIO/session.json",
+    "/data/sr-lio/output_hdmapping-SR-LIO/session.json",
+    "/data/r-voxelmap/output_hdmapping-r-voxelmap/session.json",
+    "/data/pv-lio/output_hdmapping-pv-lio/session.json",
+    "/data/rko-lio/output_hdmapping-rko-lio/session.json",
 ]
 
 result = multi_session_registration_py.run(sessions)

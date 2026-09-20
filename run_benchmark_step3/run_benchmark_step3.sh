@@ -49,6 +49,10 @@ ROS1_REPOS=(
 "benchmark-Voxel-SLAM-to-HDMapping"
 "benchmark-MM-LINS-to-HDMapping"
 "benchmark-LOG-LIO2-to-HDMapping"
+"benchmark-SR-LIO-to-HDMapping"
+"benchmark-R-VoxelMap-to-HDMapping"
+"benchmark-PV-LIO-to-HDMapping"
+"benchmark-HDMapping_LIO-to-HDMapping"
 )
 
 ROS2_REPOS=(
@@ -60,6 +64,7 @@ ROS2_REPOS=(
 "benchmark-D-LIO-to-HDMapping"
 "benchmark-GLIM-to-HDMapping"
 "benchmark-BIEVR-LIO-to-HDMapping"
+"benchmark-rko_lio-to-HDMapping"
 )
 
 ROS1_ALGOS=(
@@ -85,12 +90,24 @@ ROS1_ALGOS=(
   "voxelslam"
   "mm-lins"
   "log-lio2"
+  "sr-lio"
+  "r-voxelmap"
+  "pv-lio"
+  "hdmapping-lio"
 )
 
 for i in "${!ROS1_ALGOS[@]}"; do
     algo="${ROS1_ALGOS[$i]}"
     repo="${ROS1_REPOS[$i]}"
     OUTPUT="$OUTPUT_DIR/$algo"
+
+    # Some repos (e.g. benchmark-HDMapping_LIO-to-HDMapping) ship only a README
+    # describing a manual procedure — there is no dockerized run script to call.
+    if [[ ! -x "$CLONE_DIR/$repo/docker_session_run-ros1-$algo.sh" ]]; then
+        echo "=== Skipping $algo: $repo has no docker_session_run-ros1-$algo.sh (manual procedure, see its README) ==="
+        continue
+    fi
+
     mkdir -p "$OUTPUT"
 
 if [[ "$algo" == "dlio" || \
@@ -104,6 +121,7 @@ if [[ "$algo" == "dlio" || \
       "$algo" == "voxelslam" || \
       "$algo" == "dalislam" || \
       "$algo" == "log-lio2" || \
+      "$algo" == "sr-lio" || \
       "$algo" == "lio-ekf" ]]; then
     INPUT="${ROS1_BAG}-pc.bag"
 else
@@ -130,6 +148,7 @@ ROS2_ALGOS=(
   "d-lio"
   "glim"
   "bievr-lio"
+  "rko-lio"
 )
 
 for i in "${!ROS2_ALGOS[@]}"; do

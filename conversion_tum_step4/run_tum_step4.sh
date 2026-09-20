@@ -38,6 +38,10 @@ algorithms=(
     voxelslam
     ellipselio
     bievr-lio
+    sr-lio
+    r-voxelmap
+    pv-lio
+    rko-lio
 )
 
 BACKUP_DIR="$DATA_DIR/backup"

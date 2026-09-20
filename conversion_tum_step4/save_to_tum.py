@@ -1,3 +1,5 @@
+import os
+
 import multi_session_registration_py
 
 sessions = [
@@ -36,6 +38,14 @@ sessions = [
     "/data/rko-lio/output_hdmapping-rko-lio/session.json",
     "/data/pin-slam/output_hdmapping-PIN-SLAM/session.json",
 ]
+
+# Optional: ONLY_ALGOS="algo1 algo2 ..." (space-separated /data/<algo> folder
+# names, passed in by run_tum_step4.sh) restricts the registration to the
+# ground truth plus those algorithms. Empty (default) = all sessions.
+only_algos = os.environ.get("ONLY_ALGOS", "").split()
+if only_algos:
+    sessions = [sessions[0]] + [s for s in sessions[1:] if s.split("/")[2] in only_algos]
+    print("ONLY_ALGOS set — registering:", sessions)
 
 result = multi_session_registration_py.run(sessions)
 

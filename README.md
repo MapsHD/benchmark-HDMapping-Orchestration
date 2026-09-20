@@ -63,6 +63,12 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 ```
 
+Optionally pass a list of algorithm names (as spelled in the `*_ALGOS` arrays of the step scripts) to clone, build, run and evaluate only those, for example:
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh sr-lio r-voxelmap pv-lio rko-lio pin-slam
+```
+Without arguments all algorithms are run. The step-by-step scripts of steps 2, 3 and 4 honour the same list through the `ONLY_ALGOS` environment variable, e.g. `ONLY_ALGOS="sr-lio pv-lio" ./run_benchmark_step3.sh ...`.
+
 # Option 2 (Step by step)
 # Step 1 Prepare data
 

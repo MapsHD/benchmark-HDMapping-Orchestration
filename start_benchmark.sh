@@ -2,8 +2,29 @@
 
 set -e
 
+usage() {
+    echo "Usage: $0 [algo ...]"
+    echo
+    echo "Runs the whole benchmark pipeline (steps 1-6)."
+    echo "Optionally pass algorithm names (as spelled in the *_ALGOS arrays of the"
+    echo "step scripts) to clone, build, run and evaluate only those, e.g.:"
+    echo "  $0 sr-lio r-voxelmap pv-lio rko-lio pin-slam"
+    echo "No arguments = all algorithms."
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    usage
+    exit 0
+fi
+
 DATA_DIR=~/hdmapping-benchmark/data
 REPO_DIR=~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
+
+# Optional algorithm subset, exported so steps 2, 3 and 4 pick it up.
+if [[ $# -gt 0 ]]; then
+    export ONLY_ALGOS="$*"
+    echo "=== Restricting the benchmark to: $ONLY_ALGOS ==="
+fi
 
 cd "$DATA_DIR"
 

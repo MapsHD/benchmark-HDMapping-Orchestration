@@ -42,6 +42,7 @@ algorithms=(
     r-voxelmap
     pv-lio
     rko-lio
+    pin-slam
 )
 
 BACKUP_DIR="$DATA_DIR/backup"

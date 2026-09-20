@@ -23,6 +23,8 @@ GitHub repository [livox_bag_aggregate](https://github.com/MapsHD/livox_bag_aggr
 
 The following scripts assume that these Docker images have already been built.
 
+A GPU is recommended but not required. PIN-SLAM uses an NVIDIA GPU through the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) when one is available and otherwise falls back to CPU, which is slower but still completes. All other algorithms run on CPU.
+
 ## Create worskpace folder
 ```shell
 mkdir -p ~/hdmapping-benchmark
@@ -100,6 +102,8 @@ GitHub repository [mandeye_to_bag](https://github.com/MapsHD/mandeye_to_bag)
 GitHub repository [livox_bag_aggregate](https://github.com/MapsHD/livox_bag_aggregate)
 
 The following scripts assume that these Docker images have already been built.
+
+A GPU is recommended but not required. PIN-SLAM uses an NVIDIA GPU through the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) when one is available and otherwise falls back to CPU, which is slower but still completes. All other algorithms run on CPU.
 
 ## Make the script executable (if not done yet):
 

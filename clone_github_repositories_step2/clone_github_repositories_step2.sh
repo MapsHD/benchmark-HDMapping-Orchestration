@@ -3,7 +3,7 @@
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
     echo "Usage: $0 [branch_name]"
     echo
-    echo "Clones all ROS1 and ROS2 HDMapping benchmark repositories from MapsHD"
+    echo "Clones all ROS1, ROS2 and non-ROS (standalone) HDMapping benchmark repositories from MapsHD"
     echo "and switches them to the specified branch."
     echo
     exit 0
@@ -76,6 +76,15 @@ ROS2_REPOS=(
 "benchmark-rko_lio-to-HDMapping"
 )
 
+# =======================
+# Non-ROS repositories
+# (standalone/offline algorithms: no roscore, no rosbag record — the algorithm
+#  reads the bag file directly)
+# =======================
+NON_ROS_REPOS=(
+"benchmark-PIN-SLAM-to-HDMapping"
+)
+
 clone_repo() {
   local repo_name="$1"  
   local branch_name="$2"    
@@ -110,6 +119,11 @@ done
 
 echo "=== Cloning ROS2 repositories ==="
 for repo in "${ROS2_REPOS[@]}"; do
+  clone_repo "$repo" "$BRANCH_NAME"
+done
+
+echo "=== Cloning non-ROS repositories ==="
+for repo in "${NON_ROS_REPOS[@]}"; do
   clone_repo "$repo" "$BRANCH_NAME"
 done
 
@@ -158,6 +172,10 @@ ROS2_ALGOS=(
   "rko-lio"
 )
 
+NON_ROS_ALGOS=(
+  "pin-slam"
+)
+
 for i in "${!ROS1_ALGOS[@]}"; do
   algo="${ROS1_ALGOS[$i]}"
   dir="${ROS1_REPOS[$i]}"
@@ -180,6 +198,18 @@ for i in "${!ROS2_ALGOS[@]}"; do
   cd "$CLONE_DIR/$dir" || continue
   echo "Building Docker for $algo (ROS2 Humble)..."
   docker build -t "${algo}_humble" .
+  cd "$CLONE_DIR" || exit
+done
+
+# Non-ROS images carry no ROS distro; the tag suffix is "_standalone".
+# A GPU is recommended but not required: e.g. PIN-SLAM uses an NVIDIA GPU when
+# the NVIDIA Container Toolkit is present and falls back to CPU otherwise.
+for i in "${!NON_ROS_ALGOS[@]}"; do
+  algo="${NON_ROS_ALGOS[$i]}"
+  dir="${NON_ROS_REPOS[$i]}"
+  cd "$CLONE_DIR/$dir" || continue
+  echo "Building Docker for $algo (standalone, no ROS)..."
+  docker build -t "${algo}_standalone" .
   cd "$CLONE_DIR" || exit
 done
 

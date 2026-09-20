@@ -34,6 +34,7 @@ sessions = [
     "/data/r-voxelmap/output_hdmapping-r-voxelmap/session.json",
     "/data/pv-lio/output_hdmapping-pv-lio/session.json",
     "/data/rko-lio/output_hdmapping-rko-lio/session.json",
+    "/data/pin-slam/output_hdmapping-PIN-SLAM/session.json",
 ]
 
 result = multi_session_registration_py.run(sessions)

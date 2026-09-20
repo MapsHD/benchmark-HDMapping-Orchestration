@@ -67,6 +67,10 @@ ROS2_REPOS=(
 "benchmark-rko_lio-to-HDMapping"
 )
 
+NON_ROS_REPOS=(
+"benchmark-PIN-SLAM-to-HDMapping"
+)
+
 ROS1_ALGOS=(
   "fast-lio"    
   "dlo"
@@ -169,6 +173,39 @@ for i in "${!ROS2_ALGOS[@]}"; do
     cd "$CLONE_DIR/$repo"
     echo "=== Running $algo in $(pwd) on $INPUT ==="
     ./docker_session_run-ros2-"$algo".sh "$INPUT" "$OUTPUT"
+
+    cd "$CLONE_DIR"
+    echo "=== Finished $algo ==="
+done
+
+# Non-ROS (standalone/offline) algorithms: no roscore/tmux/rosbag record, the
+# algorithm reads the bag file directly. They consume the aggregated
+# PointCloud2 bag (-pc.bag). Run last: on a host without an NVIDIA GPU,
+# PIN-SLAM falls back to CPU, which is much slower and would otherwise delay
+# all the other algorithms.
+NON_ROS_ALGOS=(
+  "pin-slam"
+)
+
+for i in "${!NON_ROS_ALGOS[@]}"; do
+    algo="${NON_ROS_ALGOS[$i]}"
+    repo="${NON_ROS_REPOS[$i]}"
+    OUTPUT="$OUTPUT_DIR/$algo"
+
+    if [[ ! -x "$CLONE_DIR/$repo/docker_session_run-$algo.sh" ]]; then
+        echo "=== Skipping $algo: $repo has no docker_session_run-$algo.sh ==="
+        continue
+    fi
+
+    mkdir -p "$OUTPUT"
+    INPUT="${ROS1_BAG}-pc.bag"
+
+    echo "=== Waiting 5 seconds before running $algo ==="
+    sleep 5
+
+    cd "$CLONE_DIR/$repo"
+    echo "=== Running $algo in $(pwd) on $INPUT ==="
+    ./docker_session_run-"$algo".sh "$INPUT" "$OUTPUT"
 
     cd "$CLONE_DIR"
     echo "=== Finished $algo ==="

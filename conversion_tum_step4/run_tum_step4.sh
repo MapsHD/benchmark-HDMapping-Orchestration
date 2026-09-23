@@ -38,6 +38,11 @@ algorithms=(
     voxelslam
     ellipselio
     bievr-lio
+    sr-lio
+    r-voxelmap
+    pv-lio
+    rko-lio
+    pin-slam
 )
 
 BACKUP_DIR="$DATA_DIR/backup"
@@ -62,6 +67,7 @@ cp ground_truth.tum "$HOME/hdmapping-benchmark/data/tum/"
 
 docker run --rm -it \
     --user 1000:1000 \
+    -e ONLY_ALGOS="${ONLY_ALGOS:-}" \
     -v "$SCRIPT_DIR/save_to_tum.py":/workspace/save_to_tum.py:ro \
     -v ~/hdmapping-benchmark/data:/data \
     "$IMAGE_NAME" bash -c '

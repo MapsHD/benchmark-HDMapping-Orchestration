@@ -23,6 +23,8 @@ GitHub repository [livox_bag_aggregate](https://github.com/MapsHD/livox_bag_aggr
 
 The following scripts assume that these Docker images have already been built.
 
+A GPU is recommended but not required. PIN-SLAM uses an NVIDIA GPU through the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) when one is available and otherwise falls back to CPU, which is slower but still completes. All other algorithms run on CPU.
+
 ## Create worskpace folder
 ```shell
 mkdir -p ~/hdmapping-benchmark
@@ -60,6 +62,12 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark
 ```shell
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 ```
+
+Optionally pass a list of algorithm names (as spelled in the `*_ALGOS` arrays of the step scripts) to clone, build, run and evaluate only those, for example:
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh sr-lio r-voxelmap pv-lio rko-lio pin-slam
+```
+Without arguments all algorithms are run. The step-by-step scripts of steps 2, 3 and 4 honour the same list through the `ONLY_ALGOS` environment variable, e.g. `ONLY_ALGOS="sr-lio pv-lio" ./run_benchmark_step3.sh ...`.
 
 # Option 2 (Step by step)
 # Step 1 Prepare data
@@ -100,6 +108,8 @@ GitHub repository [mandeye_to_bag](https://github.com/MapsHD/mandeye_to_bag)
 GitHub repository [livox_bag_aggregate](https://github.com/MapsHD/livox_bag_aggregate)
 
 The following scripts assume that these Docker images have already been built.
+
+A GPU is recommended but not required. PIN-SLAM uses an NVIDIA GPU through the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) when one is available and otherwise falls back to CPU, which is slower but still completes. All other algorithms run on CPU.
 
 ## Make the script executable (if not done yet):
 

@@ -4,7 +4,7 @@ import glob
 def tum_info(path):
 
     if not os.path.exists(path):
-        raise FileNotFoundError(f"Nie znaleziono pliku: {path}")
+        raise FileNotFoundError(f"file not found: {path}")
 
     with open(path, "r") as f:
         lines = [
@@ -14,7 +14,7 @@ def tum_info(path):
         ]
 
     if len(lines) == 0:
-        raise ValueError(f"Plik {path} jest pusty.")
+        raise ValueError(f"trajectory file is empty, the algorithm produced no poses: {path}")
 
     timestamps = [float(line.split()[0]) for line in lines]
 
@@ -52,6 +52,15 @@ results = []
 
 for lio_file in sorted(lio_files):
 
+    name = os.path.basename(lio_file)
+    name = name.replace("output_hdmapping-", "")
+    name = name.replace("_trajectory_tum.txt", "")
+
+    # Header first, so an error below is clearly attributed to this algorithm.
+    print("=" * 60)
+    print(name.upper())
+    print("=" * 60)
+
     try:
         lio = tum_info(lio_file)
 
@@ -73,13 +82,6 @@ for lio_file in sorted(lio_files):
         )
 
 
-        name = os.path.basename(lio_file)
-        name = name.replace("output_hdmapping-", "")
-        name = name.replace("_trajectory_tum.txt", "")
-
-        print("=" * 60)
-        print(name.upper())
-        print("=" * 60)
         print(f"Start timestamp : {lio['ts_begin']:.9f}")
         print(f"End timestamp   : {lio['ts_end']:.9f}")
         print(f"Duration        : {lio['duration']:.3f} s")
@@ -103,7 +105,8 @@ for lio_file in sorted(lio_files):
 
 
     except Exception as e:
-        print(f"{lio_file}: ERROR -> {e}")
+        print(f"SKIPPED: {e}")
+        print()
 
 print()
 print("=" * 90)

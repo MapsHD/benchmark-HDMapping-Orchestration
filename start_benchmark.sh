@@ -6,10 +6,10 @@ usage() {
     echo "Usage: $0 [algo ...]"
     echo
     echo "Runs the whole benchmark pipeline (steps 1-6)."
-    echo "Optionally pass algorithm names (as spelled in the *_ALGOS arrays of the"
-    echo "step scripts) to clone, build, run and evaluate only those, e.g.:"
+    echo "Optionally pass algorithm ids (the 'id' column of algorithms.conf) to"
+    echo "clone, build, run and evaluate only those, e.g.:"
     echo "  $0 sr-lio r-voxelmap pv-lio rko-lio pin-slam"
-    echo "No arguments = all algorithms."
+    echo "No arguments = all algorithms. An unknown id aborts with the known list."
 }
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
@@ -113,7 +113,7 @@ if command -v python3 >/dev/null 2>&1; then
 elif command -v python >/dev/null 2>&1; then
     python overlap.py
 else
-    echo "ERROR: Nie znaleziono python3 ani python"
+    echo "ERROR: neither python3 nor python found on machine"
     exit 1
 fi
 

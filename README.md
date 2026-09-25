@@ -63,11 +63,25 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh
 ```
 
-Optionally pass a list of algorithm names (as spelled in the `*_ALGOS` arrays of the step scripts) to clone, build, run and evaluate only those, for example:
+Optionally pass a list of algorithm ids to clone, build, run and evaluate only those, for example:
 ```shell
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh sr-lio r-voxelmap pv-lio rko-lio pin-slam
 ```
-Without arguments all algorithms are run. The step-by-step scripts of steps 2, 3 and 4 honour the same list through the `ONLY_ALGOS` environment variable, e.g. `ONLY_ALGOS="sr-lio pv-lio" ./run_benchmark_step3.sh ...`.
+Without arguments all algorithms are run. An unknown id aborts the run and prints the known ids. The step-by-step scripts of steps 2, 3 and 4 honour the same list through the `ONLY_ALGOS` environment variable, e.g. `ONLY_ALGOS="sr-lio pv-lio" ./run_benchmark_step3.sh ...`.
+
+## Adding or changing an algorithm
+
+Every algorithm is described on one line of [algorithms.conf](algorithms.conf), which steps 2, 3 and 4 all read. A name is therefore written exactly once and cannot differ by a letter between steps.
+
+| column | meaning |
+| ------------- | ------------- |
+| `category` | `ROS1`, `ROS2` or `NON_ROS` (standalone, reads the bag directly) |
+| `repo` | repository under https://github.com/MapsHD |
+| `id` | short name: the `data/<id>` folder, the `docker_session_run-<ros1\|ros2\|->-<id>.sh` script and, lowercased, the Docker image tag |
+| `output` | folder the algorithm's own converter writes, without the `output_hdmapping-` prefix; empty means there is no automated output |
+| `input` | `raw` (the ROS1 bag), `pc` (the aggregated `-pc.bag`), `ros2` (the ROS2 bag directory) or `ros2-lidar` |
+
+The `id` is lowercased for the Docker image tag because Docker rejects uppercase image names. The `output` column exists because each algorithm repository hardcodes its own output folder name, which often differs from both the repository name and the id.
 
 # Option 2 (Step by step)
 # Step 1 Prepare data

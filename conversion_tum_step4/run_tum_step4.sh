@@ -4,56 +4,36 @@ IMAGE_NAME="hdmapping_tum"
 DATA_DIR="$HOME/hdmapping-benchmark/data"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+source "$SCRIPT_DIR/../algos_lib.sh"
+
 cd "$SCRIPT_DIR" || exit 1
 
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: $0"
+    echo
+    echo "Registers every algorithm session against the ground truth and exports"
+    echo "TUM trajectories. The list of algorithms lives in algorithms.conf."
+    echo "Set ONLY_ALGOS=\"id1 id2 ...\" to restrict it to those algorithms."
+    exit 0
+fi
+
+check_only_algos
+
 echo "Building Docker image '$IMAGE_NAME'..."
-docker build -t "$IMAGE_NAME" . 
+docker build -t "$IMAGE_NAME" .
 
 echo "Creating backups in $DATA_DIR..."
-
-algorithms=(
-    c3p-voxelmap
-    ct-icp
-    dlio
-    d-lio
-    dlo
-    faster-lio
-    fast-lio
-    form
-    genz-icp
-    glim
-    i2ekf-lo
-    ig-lio
-    kiss-icp
-    lego-loam
-    lidar_odometry_ros_wrapper
-    lio-ekf
-    nv-liom
-    point-lio
-    se3-lio
-    slict
-    super-lio
-    superOdom
-    dalislam
-    voxelslam
-    ellipselio
-    bievr-lio
-    sr-lio
-    r-voxelmap
-    pv-lio
-    rko-lio
-    pin-slam
-)
 
 BACKUP_DIR="$DATA_DIR/backup"
 mkdir -p "$BACKUP_DIR"
 
 echo "Backup folder: $BACKUP_DIR"
 
-for alg in "${algorithms[@]}"; do
+# Back up every algorithm's output folder (missing ones are simply skipped).
+for alg in $(algo_ids); do
     src="$DATA_DIR/$alg"
     dst="$BACKUP_DIR/${alg}_backup"
-    
+
     if [ -d "$src" ] && [ ! -d "$dst" ]; then
         echo "Backing up $alg..."
         cp -a "$src" "$dst"
@@ -69,6 +49,7 @@ docker run --rm -it \
     --user 1000:1000 \
     -e ONLY_ALGOS="${ONLY_ALGOS:-}" \
     -v "$SCRIPT_DIR/save_to_tum.py":/workspace/save_to_tum.py:ro \
+    -v "$ALGOS_CONF":/workspace/algorithms.conf:ro \
     -v ~/hdmapping-benchmark/data:/data \
     "$IMAGE_NAME" bash -c '
 cd /workspace/HDMapping

@@ -1,51 +1,61 @@
+"""Register every algorithm session against the ground truth and export TUM.
+
+The list of algorithms is not kept here: it is read from algorithms.conf, the
+single source of truth shared by steps 2, 3 and 4. run_tum_step4.sh mounts
+that file into the container at /workspace/algorithms.conf.
+"""
+
 import os
+import sys
 
 import multi_session_registration_py
 
-sessions = [
-    "/data/ground_truth/HDMappingGroundTruth/lio_result_0/session.mjs",
-    "/data/c3p-voxelmap/output_hdmapping-c3p-voxelmap/session.json",
-    "/data/ct-icp/output_hdmapping-ct-icp/session.json",
-    "/data/dlio/output_hdmapping-dlio/session.json",
-    "/data/dlo/output_hdmapping-dlo/session.json",
-    "/data/faster-lio/output_hdmapping-faster-lio/session.json",
-    "/data/fast-lio/output_hdmapping-fast-lio/session.json",
-    "/data/form/output_hdmapping-form/session.json",
-    "/data/genz-icp/output_hdmapping-genz/session.json",
-    "/data/glim/output_hdmapping-glim/session.json",
-    "/data/i2ekf-lo/output_hdmapping-i2ekf-lo/session.json",
-    "/data/ig-lio/output_hdmapping-ig-lio/session.json",
-    "/data/kiss-icp/output_hdmapping-kiss/session.json",
-    "/data/lego-loam/output_hdmapping-lego-loam/session.json",
-    "/data/lidar_odometry_ros_wrapper/output_hdmapping-lidar-odometry-ros/session.json",
-    "/data/lio-ekf/output_hdmapping-lio-ekf/session.json",
-    "/data/nv-liom/output_hdmapping-nv-liom/session.json",
-    "/data/point-lio/output_hdmapping-point-lio/session.json",
-    "/data/slict/output_hdmapping-slict/session.json",
-    "/data/se3-lio/output_hdmapping-SE3-LIO/session.json",
-    "/data/super-lio/output_hdmapping-super-lio/session.json",
-    "/data/mm-lins/output_hdmapping-mm-lins/session.json",
-    "/data/log-lio2/output_hdmapping-log-lio2/session.json",
-    "/data/superOdom/output_hdmapping-superOdom/session.json",
-    "/data/d-lio/output_hdmapping-D-LIO/session.json",
-    "/data/ellipselio/output_hdmapping-EllipseLIO/session.json",
-    "/data/dalislam/output_hdmapping-DALI_SLAM/session.json",
-    "/data/voxelslam/output_hdmapping-Voxel-SLAM/session.json",
-    "/data/bievr-lio/output_hdmapping-BIEVR-LIO/session.json",
-    "/data/sr-lio/output_hdmapping-SR-LIO/session.json",
-    "/data/r-voxelmap/output_hdmapping-r-voxelmap/session.json",
-    "/data/pv-lio/output_hdmapping-pv-lio/session.json",
-    "/data/rko-lio/output_hdmapping-rko-lio/session.json",
-    "/data/pin-slam/output_hdmapping-PIN-SLAM/session.json",
-]
+CONF_PATH = os.environ.get("ALGOS_CONF", "/workspace/algorithms.conf")
 
-# Optional: ONLY_ALGOS="algo1 algo2 ..." (space-separated /data/<algo> folder
-# names, passed in by run_tum_step4.sh) restricts the registration to the
-# ground truth plus those algorithms. Empty (default) = all sessions.
+# The ground truth is not an algorithm, so it is named here rather than in
+# algorithms.conf, and it must stay first in the list.
+GROUND_TRUTH = "/data/ground_truth/HDMappingGroundTruth/lio_result_0/session.mjs"
+
+
+def read_algorithms(path):
+    """Yield (id, output_folder) for each algorithm line of algorithms.conf."""
+    if not os.path.isfile(path):
+        sys.exit(f"ERROR: cannot find algorithms.conf at {path}")
+
+    with open(path) as handle:
+        for line in handle:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            fields = [f.strip() for f in line.split("|")]
+            if len(fields) < 4:
+                continue
+            _category, _repo, algo_id, output = fields[:4]
+            yield algo_id, output
+
+
+def build_sessions(path, only_algos):
+    sessions = [GROUND_TRUTH]
+    for algo_id, output in read_algorithms(path):
+        # An empty output column means the algorithm has no automated result
+        # (e.g. HDMapping_LIO, which is a manual procedure).
+        if not output:
+            continue
+        if only_algos and algo_id not in only_algos:
+            continue
+        sessions.append(f"/data/{algo_id}/output_hdmapping-{output}/session.json")
+    return sessions
+
+
 only_algos = os.environ.get("ONLY_ALGOS", "").split()
+sessions = build_sessions(CONF_PATH, only_algos)
+
 if only_algos:
-    sessions = [sessions[0]] + [s for s in sessions[1:] if s.split("/")[2] in only_algos]
-    print("ONLY_ALGOS set — registering:", sessions)
+    print("ONLY_ALGOS set — registering:")
+else:
+    print(f"Registering {len(sessions) - 1} algorithm sessions:")
+for session in sessions:
+    print(f"  {session}")
 
 result = multi_session_registration_py.run(sessions)
 

@@ -57,6 +57,11 @@ FALLBACK_NOTE_MD = ("\\* never moved, so Umeyama (SE(3)) alignment is impossible
 FALLBACK_NOTE_TEX = ("* never moved, so Umeyama alignment is impossible; "
                      "aligned at the first pose instead.")
 
+# Trajectory files that hit DEGENERATE_ALIGNMENT, filled in by run_evo. The
+# evo_traj plot aligns every trajectory with -a too and aborts entirely on the
+# first such file, so run_evo_traj_plot leaves these out.
+UNALIGNABLE_FILES = set()
+
 
 def evo_metrics(tool: str, ground_truth: str, traj_file: str, align_args: list[str]):
     cmd = [tool, "tum", ground_truth, traj_file] + align_args
@@ -80,6 +85,7 @@ def run_evo(tool: str, ground_truth: str, traj_files: list[str],
 
         metrics, result = evo_metrics(tool, ground_truth, traj_file, ["-a"])
         if not metrics and DEGENERATE_ALIGNMENT in (result.stdout + result.stderr):
+            UNALIGNABLE_FILES.add(traj_file)
             how = " ".join(fallback_args) or "no alignment"
             print(f"\n--- {tool}: '{method_name}' never moves, so SE(3) alignment is impossible; retrying with {how}")
             metrics, result = evo_metrics(tool, ground_truth, traj_file, fallback_args)
@@ -108,7 +114,9 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
     valid_files = []
 
     for f in sorted(traj_files):
-        if os.path.isfile(f) and os.path.getsize(f) > 0:
+        if f in UNALIGNABLE_FILES:
+            print(f"Skipping never-moving trajectory (cannot be aligned): {f}")
+        elif os.path.isfile(f) and os.path.getsize(f) > 0:
             valid_files.append(f)
         else:
             print(f"Skipping empty file: {f}")

@@ -360,7 +360,7 @@ trajectory_lio_*.csv
 
 # Trajectories
 
-![Trajectories](plots/image05-7-2026.png)
+![Trajectories](plots/image27-09-2026.png)
 
 # More info
 Our paper about benchmark

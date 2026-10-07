@@ -8,6 +8,37 @@ Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/publi
 Alternative link to data on Zenodo [link](https://zenodo.org/records/23069933).
 If You have problem with downloading data contact me januszbedkowski@gmail.com.
 
+If you download data forom Zenodo **reg-1.zip** is split into multiple parts:
+
+```bash
+michal@michal-pc:~/Downloads$ ls -lah | grep part
+-rw-rw-r--  1 michal michal 500M Oct  7 16:36 reg-1.zip.part-000
+-rw-rw-r--  1 michal michal 500M Oct  7 16:36 reg-1.zip.part-001
+-rw-rw-r--  1 michal michal 500M Oct  7 16:36 reg-1.zip.part-002
+# And so on ...
+# And so on ...
+# And so on ...
+-rw-rw-r--  1 michal michal 500M Oct  7 17:04 reg-1.zip.part-034
+-rw-rw-r--  1 michal michal 500M Oct  7 17:06 reg-1.zip.part-035
+-rw-rw-r--  1 michal michal 384M Oct  7 17:06 reg-1.zip.part-036
+```
+
+In order to merge them use:
+
+```bash
+# Move to downloads:
+cd ~/Downloads
+
+# Merge zip-parts
+cat reg-1.zip.part-0* > full.zip
+
+# Fix merged zip
+zip -F full.zip --out full-fixed.zip
+
+# Unzip final archive - this command will produce reg-1.bag in your ~/Downloads
+unzip full-fixed.zip
+```
+
 File 'reg-1.bag' is an input for further calculations.
 It should be located in '~/hdmapping-benchmark/data'.
 

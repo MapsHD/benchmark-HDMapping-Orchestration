@@ -8,7 +8,7 @@ Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/publi
 Alternative link to data on Zenodo [link](https://zenodo.org/records/23069933).
 If You have problem with downloading data contact me januszbedkowski@gmail.com.
 
-If you download data forom Zenodo **reg-1.zip** is split into multiple parts:
+If you download data from Zenodo **reg-1.zip** is split into multiple parts:
 
 ```bash
 michal@michal-pc:~/Downloads$ ls -lah | grep part

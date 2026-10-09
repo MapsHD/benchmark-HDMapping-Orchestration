@@ -38,7 +38,21 @@ echo "ROS1 -> ROS2"
   "$OUTPUT_DIR" \
   "ros1-to-ros2"
 
+# HDMapping (Mandeye) format, the input of HDMapping_LIO. Converted into a
+# .partial folder and renamed on success, so an interrupted conversion is
+# never taken for a finished one.
+HDMAPPING_DIR="$OUTPUT_DIR/${BAG_NAME}-hdmapping"
+echo "ROS1 -> HDMapping (Mandeye) format"
+rm -rf "${HDMAPPING_DIR}.partial"
+"$CONVERSION_SCRIPT" \
+  "$ROS1_BAG" \
+  "${HDMAPPING_DIR}.partial" \
+  "ros1-to-hdmapping"
+rm -rf "$HDMAPPING_DIR"
+mv "${HDMAPPING_DIR}.partial" "$HDMAPPING_DIR"
+
 echo "==========================================="
 echo "DONE"
 echo "PC bag: $PC_BAG"
+echo "HDMapping-format data: $HDMAPPING_DIR"
 echo "==========================================="

@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y \
     libopengl-dev \
     libgl-dev \
     libglut-dev \
+    liblz4-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --break-system-packages \

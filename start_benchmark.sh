@@ -70,6 +70,29 @@ else
 
 fi
 
+# HDMapping (Mandeye) format data, the 'hdmapping' input of algorithms.conf.
+# Checked on its own, so a setup that already has the outputs above only adds
+# this folder, and only when a selected algorithm uses it.
+source "$REPO_DIR/algos_lib.sh"
+needs_input() {
+    for category in ROS1 ROS2 NON_ROS; do algo_rows "$category"; done |
+        awk -F'\t' -v kind="$1" '$4 == kind { found = 1 } END { exit !found }'
+}
+if needs_input hdmapping; then
+    if [ -d "$DATA_DIR/reg-1-hdmapping" ]; then
+        echo "HDMapping-format data exists. Skipping."
+    else
+        echo "Converting reg-1.bag to HDMapping (Mandeye) format..."
+        chmod +x "$REPO_DIR/prepare_data_step1/mandeye-convert.sh"
+        rm -rf "$DATA_DIR/reg-1-hdmapping.partial"
+        "$REPO_DIR/prepare_data_step1/mandeye-convert.sh" \
+            "$DATA_DIR/reg-1.bag" \
+            "$DATA_DIR/reg-1-hdmapping.partial" \
+            ros1-to-hdmapping
+        mv "$DATA_DIR/reg-1-hdmapping.partial" "$DATA_DIR/reg-1-hdmapping"
+    fi
+fi
+
 sleep 5
 
 echo "=== Step 2: clone_github_repositories_step2 ==="

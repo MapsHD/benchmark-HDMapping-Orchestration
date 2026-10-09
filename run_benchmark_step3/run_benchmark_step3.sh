@@ -41,6 +41,7 @@ resolve_input() {
     pc)         echo "${ROS1_BAG}-pc.bag" ;;
     ros2)       echo "$ROS2_BAG_DIR" ;;
     ros2-lidar) echo "${ROS2_BAG_DIR}-lidar" ;;
+    hdmapping)  echo "$(dirname "$ROS1_BAG")/$(basename "$ROS1_BAG" .bag)-hdmapping" ;;
     *)          echo "" ;;
   esac
 }

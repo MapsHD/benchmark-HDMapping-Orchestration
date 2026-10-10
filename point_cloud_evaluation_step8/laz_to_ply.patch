@@ -1,0 +1,47 @@
+diff --git a/apps/console_tools/laz_to_ply.cpp b/apps/console_tools/laz_to_ply.cpp
+--- a/apps/console_tools/laz_to_ply.cpp
++++ b/apps/console_tools/laz_to_ply.cpp
+@@ -46,7 +46,7 @@
+ 
+     laszip_point* point = nullptr;
+-    if (laszip_get_point_pointer(header, &point))
++    if (laszip_get_point_pointer(laszip_reader, &point))
+     {
+         return false;
+     }
+ 
+@@ -57,7 +57,7 @@
+     laszip_I64 point_read_count = 0;
+     while (point_read_count < point_count)
+     {
+-        if (laszip_read_point(header))
++        if (laszip_read_point(laszip_reader))
+         {
+             return false;
+         }
+@@ -71,6 +71,12 @@
+         point_read_count++;
+     }
+ 
++    if (laszip_close_reader(laszip_reader) || laszip_destroy(laszip_reader))
++    {
++        spdlog::error("Failed closing LASzip reader");
++        return false;
++    }
++
+     if (std::ofstream to_file = std::ofstream(to, std::ios::out | std::ios::binary))
+     {
+         to_file << "ply\n";
+@@ -84,6 +90,12 @@
+         to_file << "end_header\n";
+ 
+         to_file.write((const char*)points.data(), points.size() * sizeof(Point));
++        to_file.close();
++        if (!to_file)
++        {
++            spdlog::error("Failed writing PLY output {}", to);
++            return false;
++        }
+     }
+     else
+     {

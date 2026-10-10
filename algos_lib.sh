@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shared reader for algorithms.conf, the single source of truth for every
-# algorithm in the benchmark. Steps 2, 3, 4 and 7 source this file so that an
+# algorithm in the benchmark. Steps 2, 3, 4, 7 and 8 source this file so that an
 # algorithm's name is written exactly once and cannot drift between steps.
 
 ALGOS_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

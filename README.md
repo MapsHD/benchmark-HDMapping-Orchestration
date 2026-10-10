@@ -42,6 +42,32 @@ unzip full-fixed.zip
 File 'reg-1.bag' is an input for further calculations.
 It should be located in '~/hdmapping-benchmark/data'.
 
+The same [Zenodo dataset](https://zenodo.org/records/23069933) also provides the
+`HDMappingGroundTruth` and `TLS-FARO-Focus` directories. Place both extracted
+directories beside `reg-1.bag`, preserving their contents:
+
+```text
+~/hdmapping-benchmark/data/
+├── reg-1.bag
+├── HDMappingGroundTruth/
+│   └── lio_result_0/
+│       ├── session.mjs
+│       ├── session_ini_poses.mri
+│       ├── session_poses.mrp
+│       ├── scan_lio_*.laz
+│       └── trajectory_lio_*.csv
+└── TLS-FARO-Focus/
+    ├── map_gt_0.01.laz
+    └── map_gt_0.01.pcd
+```
+
+`HDMappingGroundTruth/lio_result_0/session.mjs` is the reference session for
+Steps 4 and 7. `TLS-FARO-Focus/map_gt_0.01.laz` is the reference point cloud for
+Step 8 evaluation; the Step 7 registration stage does not read it.
+Downloading only the bag does not provide the reference session required by
+these stages. Do not place the reference directories under an extra `ground_truth`
+directory.
+
 ## Create worskpace folder
 ```shell
 mkdir -p ~/hdmapping-benchmark/data
@@ -86,6 +112,8 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_re
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4/run_tum_step4.sh
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_evaluation_step8/run_evaluation_step8.sh
 ```
 
 ```shell
@@ -100,11 +128,15 @@ Optionally pass a list of algorithm ids to clone, build, run and evaluate only t
 ```shell
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/start_benchmark.sh sr-lio r-voxelmap pv-lio rko-lio pin-slam
 ```
-Without arguments all algorithms are run. An unknown id aborts the run and prints the known ids. The step-by-step scripts of steps 2, 3 and 4 honour the same list through the `ONLY_ALGOS` environment variable, e.g. `ONLY_ALGOS="sr-lio pv-lio" ./run_benchmark_step3.sh ...`.
+Without arguments all algorithms are run. An unknown id aborts the run and prints the known ids. The step-by-step scripts of steps 2, 3, 4, 7 and 8 honour the same list through the `ONLY_ALGOS` environment variable, e.g. `ONLY_ALGOS="sr-lio pv-lio" ./run_benchmark_step3.sh ...`.
+
+The full pipeline now runs Steps 1-8, including rigid registration of the algorithm
+point clouds to the ground-truth session and evaluation against the FARO cloud.
+It does not run the optional HDMapping session export utility.
 
 ## Adding or changing an algorithm
 
-Every algorithm is described on one line of [algorithms.conf](algorithms.conf), which steps 2, 3 and 4 all read. A name is therefore written exactly once and cannot differ by a letter between steps.
+Every algorithm is described on one line of [algorithms.conf](algorithms.conf), which steps 2, 3, 4, 7 and 8 all read. A name is therefore written exactly once and cannot differ by a letter between steps.
 
 | column | meaning |
 | ------------- | ------------- |
@@ -147,6 +179,10 @@ Download the dataset `reg-1.bag` by clicking [link](https://cloud.cylab.be/publi
 File 'reg-1.bag' is an input for further calculations.
 It should be located in '~/hdmapping-benchmark/data'.
 
+Also obtain `HDMappingGroundTruth` and `TLS-FARO-Focus` from the
+[Zenodo dataset](https://zenodo.org/records/23069933) and place them beside the bag,
+following the [dataset layout above](#available-dataset).
+
 ### Prerequisites for Running the Scripts:
 Before running the scripts below, build the required Docker images according to the instructions provided in:
 
@@ -168,6 +204,8 @@ chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/clone_github_re
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/run_benchmark_step3/run_benchmark_step3.sh
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/conversion_tum_step4/run_tum_step4.sh
 chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/evo_step5/tum-to-latex_step5.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_evaluation_step8/run_evaluation_step8.sh
 ```
 ### Run the script:
 
@@ -302,6 +340,468 @@ trajectory_lio_*.csv
 
 ~/hdmapping-benchmark/data/tum
 
+# Step 7 Register algorithm point clouds to ground truth
+
+This benchmark stage builds and runs HDMapping's
+`session_to_session_rigid_registration` application. Each algorithm is registered
+independently to `HDMappingGroundTruth/lio_result_0/session.mjs`, using one rigid
+transform estimated from timestamp-matched trajectory positions. The transform is
+applied to the source session's scans, preserving its internal map geometry.
+The output is a merged, registered point cloud for Step 8. Point-cloud metric
+computation is performed in Step 8, not in this registration stage.
+
+## Prerequisites:
+
+- Docker must be installed, running and accessible to your user.
+- Place the complete `HDMappingGroundTruth` directory from the Zenodo dataset
+  beside `reg-1.bag`, as described in the [dataset section](#available-dataset).
+- Algorithm outputs must contain a `session.json` or `session.mjs`, scans, pose
+  files and per-scan trajectory CSVs. The current sessions are used, including
+  their current poses after Step 4, not the backup copies.
+- Internet access is needed for the first image build. The Ubuntu 24.04 image
+  recursively clones HDMapping's default branch (main), without pinning a
+  revision, and installs CMake 4.0.0 for Linux x86_64. Git uses HTTP/1.1 to avoid
+  public-submodule download errors. No local HDMapping checkout, GPU or display
+  server is required.
+- Allow sufficient RAM to load both the ground-truth session and one algorithm
+  session, and disk space for registered clouds. Algorithms run sequentially;
+  compilation defaults to two parallel jobs.
+
+Both sessions are downsampled using a fixed **0.01 m bucket size**, matching the
+ground-truth session's recorded decimation. This affects the points retained in
+`registered.laz`. `TLS-FARO-Focus` is not used during registration; it is the
+reference cloud for Step 8.
+
+## Make the script executable (if not done yet):
+
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh
+```
+
+## Change directory to the data folder:
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
+
+## Run the registration stage:
+
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh
+```
+
+This builds the `hdmapping_rigid_registration` image, reusing Docker's build cache,
+and registers all configured algorithms. `start_benchmark.sh` also runs this stage
+after Step 6. Inputs are mounted read-only and output files are owned by the invoking
+user.
+
+For an initial manual run with one algorithm:
+
+```shell
+ONLY_ALGOS="fast-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh
+```
+
+Use exact, case-sensitive IDs from [algorithms.conf](algorithms.conf). Unknown IDs
+abort before building the image. A list such as `ONLY_ALGOS="fast-lio sr-lio"` is
+also supported.
+
+To change directories and reduce compilation parallelism:
+
+```shell
+HDMAPPING_BUILD_JOBS=1 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh \
+    --data-dir "$HOME/hdmapping-benchmark/data" \
+    --output-dir "$HOME/hdmapping-benchmark/step7_registration_run2"
+```
+
+Input defaults to `~/hdmapping-benchmark/data`; output defaults to
+`<data-dir>/step7_registration`. Relative paths are resolved from the calling
+directory. Run with `--help` to display usage.
+
+## Result and input for Step 8:
+
+For each selected algorithm, the source is exactly one of:
+
+```text
+<data-dir>/<algorithm-id>/output_hdmapping-<output>/session.json
+<data-dir>/<algorithm-id>/output_hdmapping-<output>/session.mjs
+```
+
+`<output>` is the output column of [algorithms.conf](algorithms.conf). If both
+session files exist, the algorithm is reported as ambiguous; retain only the
+intended session before running.
+
+Successful registration produces:
+
+```text
+<output-dir>/
+├── fast-lio/
+│   ├── registered.laz
+│   ├── registration.log
+│   ├── sanity_check_trg.txt
+│   └── sanity_check_src.txt
+└── registration_summary.csv
+```
+
+- **`<algorithm-id>/registered.laz`** is the merged source cloud transformed into
+  the ground-truth frame, ready for Step 8.
+- `registration.log` contains application output, including the transform and
+  iteration diagnostics, plus the output-header validation result.
+- `sanity_check_trg.txt` and `sanity_check_src.txt` contain ground-truth and
+  transformed-source trajectory positions for inspection. They are not TUM files.
+- `registration_summary.csv` records `algorithm_id`, `source_session`,
+  `target_session`, `bucket_size_m`, `registered_laz` and `status`. Status is
+  `registered`, `missing`, `ambiguous`, `existing` or `failed`. Missing or ambiguous
+  sources have an empty source-session field.
+
+Paths in the CSV use container prefixes `/data` and `/results`, corresponding to
+the selected host input/output directories. A `registered` status means the
+application completed without known failure diagnostics, both sanity-check files
+are nonempty, and the LAZ header has a positive point count and finite coordinate
+metadata. Header validation does not fully decode compressed points or prove
+registration accuracy. Application iteration diagnostics are not the later
+point-cloud benchmark metrics.
+
+## Timestamp-matching limitation:
+
+The application is used unchanged. It matches each source trajectory node to the
+first ground-truth node at or after the source timestamp; it does not interpolate
+or restrict fitting to the shared time interval. Source timestamps before ground
+truth begins therefore match the first ground-truth pose, and timestamps after
+ground truth ends are omitted from the fit.
+
+For this dataset, FAST-LIO begins approximately 20 seconds before the ground-truth
+trajectory. This behavior can influence the fitted transform and should be
+considered when interpreting later benchmark results.
+
+## Missing inputs, failures and reruns:
+
+Missing ground truth aborts before the image build. Missing algorithm sessions,
+ambiguous sessions and failed registrations are reported individually while the
+remaining algorithms are processed. The final summary lists selected, registered,
+missing and failed counts. The command returns nonzero if any selected algorithm
+is missing or fails, or if none is registered.
+
+Existing per-algorithm result directories are never overwritten or silently
+skipped, including partial results from failed runs. Their status is `existing`,
+which counts as a failure in the current run. Use a new `--output-dir` for another
+full run. To retry a subset, set `ONLY_ALGOS` and first move any existing result
+folders for those algorithms aside. Existing logs and clouds are preserved;
+`registration_summary.csv` is replaced with the report for the most recent run.
+
+# Step 8 Evaluate registered point clouds against FARO
+
+This stage compares each successful Step 7 cloud with
+`TLS-FARO-Focus/map_gt_0.01.laz`, using
+[MapsHD/point_clouds_evaluation](https://github.com/MapsHD/point_clouds_evaluation).
+HDMapping's `laz_to_ply` application converts both inputs to binary PLY first.
+The FARO cloud is loaded once, and algorithm clouds are processed sequentially.
+
+Evaluation uses **complete clouds**, without additional voxel filtering or random
+sampling. Step 7's existing 0.01 m downsampling remains part of the algorithm input.
+Step 8 does not recenter, crop or re-register the clouds; it assumes Step 7's
+ground-truth frame matches the FARO frame. Registration errors and differing scene
+coverage therefore affect the metrics rather than being corrected during evaluation.
+
+## Prerequisites:
+
+- Docker must be installed, running and accessible to your user.
+- Obtain `TLS-FARO-Focus/map_gt_0.01.laz` from the same Zenodo dataset as the bag,
+  following the [dataset layout](#available-dataset).
+- Run Step 7 first. Both `registration_summary.csv` and the selected algorithms'
+  `registered.laz` files are needed. Only rows with status `registered` are
+  eligible; a LAZ file left by a failed registration is not evaluated.
+- Internet access is needed for the first build. The Ubuntu 24.04 image recursively
+  clones HDMapping and clones `point_clouds_evaluation`, both from their default
+  branches without revision pins. It builds only the `laz_to_ply` target, enables
+  HDMapping's CLI tools, and uses the evaluator's existing `pyproject.toml` and
+  `uv.lock` with Python 3.12. No local source checkout, GPU or display is required.
+- Allow substantial RAM for full-cloud loading and nearest-neighbor searches.
+  The FARO file has approximately 29 million points, and the largest current
+  algorithm cloud has approximately 55 million. Keeping the current converted
+  clouds requires roughly **16 GiB of additional disk space**, excluding Docker
+  storage and the original LAZ files. `HDMAPPING_BUILD_JOBS` limits compilation
+  parallelism only; it does not reduce evaluation memory requirements.
+
+The Docker build applies a narrow correction to HDMapping's converter: two
+LASzip calls must use the reader handle rather than the LAS header, and reader
+closure/output-write errors must be checked. The patch is confined to the image's
+checkout; your local HDMapping repository is not modified. Already-patched source
+is accepted; incompatible upstream changes stop the build with an explicit error
+instead of silently using a broken converter.
+
+## Make the script executable (if not done yet):
+
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_evaluation_step8/run_evaluation_step8.sh
+```
+
+## Change directory to the data folder:
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
+
+## Run the evaluation stage:
+
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_evaluation_step8/run_evaluation_step8.sh
+```
+
+The script builds the `hdmapping_point_cloud_evaluation` image using Docker's build
+cache, then evaluates every selected algorithm with a successful Step 7 status.
+`start_benchmark.sh` invokes Step 8 after Step 7; an unsuccessful Step 7 still stops
+the full pipeline before Step 8. You can run Step 8 separately to evaluate the
+successful subset of a partially failed registration run.
+
+For your first manual evaluation:
+
+```shell
+ONLY_ALGOS="fast-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_evaluation_step8/run_evaluation_step8.sh
+```
+
+Use exact, case-sensitive IDs from [algorithms.conf](algorithms.conf). A list such as
+`ONLY_ALGOS="fast-lio sr-lio"` is also supported. Unknown IDs abort before building.
+Conversion and evaluation run only when you invoke the script.
+
+To use an alternative Step 7 result directory and a new evaluation output:
+
+```shell
+HDMAPPING_BUILD_JOBS=1 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_evaluation_step8/run_evaluation_step8.sh \
+    --data-dir "$HOME/hdmapping-benchmark/data" \
+    --registration-dir "$HOME/hdmapping-benchmark/step7_registration_run2" \
+    --output-dir "$HOME/hdmapping-benchmark/step8_evaluation_run2"
+```
+
+Defaults are:
+
+| Input/output | Default |
+| --- | --- |
+| Dataset directory | `~/hdmapping-benchmark/data` |
+| Registration directory | `<data-dir>/step7_registration` |
+| FARO reference | `<data-dir>/TLS-FARO-Focus/map_gt_0.01.laz` |
+| Evaluation output | `<data-dir>/step8_evaluation` |
+
+Relative paths are resolved from the calling directory. Inputs are mounted
+read-only and outputs are owned by the invoking user. Run with `--help` for usage.
+
+## Metrics:
+
+All distances are in meters. Precision, recall and F-score are fractions in
+`[0, 1]`. The threshold is fixed at **0.01 m**, with a strict less-than comparison;
+this agreement threshold is separate from Step 7's downsampling bucket.
+
+| Output field | Definition |
+| --- | --- |
+| `chamfer_algorithm_to_faro_m` | Mean algorithm-to-FARO nearest-neighbor distance |
+| `chamfer_faro_to_algorithm_m` | Mean FARO-to-algorithm nearest-neighbor distance |
+| `chamfer_distance_m` | Average of the two directional means; not a squared distance |
+| `hausdorff_distance_m` | Maximum nearest-neighbor distance across both directions |
+| `precision` | Fraction of algorithm points less than 0.01 m from FARO |
+| `recall` | Fraction of FARO points less than 0.01 m from the algorithm |
+| `fscore` | Harmonic mean of precision and recall |
+| `rmse_algorithm_to_faro_m` | Root mean square algorithm-to-FARO nearest-neighbor distance |
+
+The adapter imports the evaluation repository's existing geometric functions.
+It supplies predictions first to the precision/recall helper, correcting the
+upstream CLI's reversed roles. RMSE always uses nearest neighbors, not the
+upstream function's row-by-row shortcut when two independent clouds happen to
+have equal point counts. Advanced, color-dependent and normal-based metrics are
+not enabled. PLY intensity/timestamps are retained by conversion but not used by
+these geometric metrics.
+
+## Result:
+
+```text
+<output-dir>/
+├── reference/
+│   ├── faro.ply
+│   ├── conversion.log
+│   └── source.json
+├── fast-lio/
+│   ├── registered.ply
+│   ├── metrics.json
+│   └── evaluation.log
+├── evaluation_summary.csv
+└── evaluation_summary.md
+```
+
+- `reference/faro.ply` is converted once and kept for reuse. `source.json` records
+  its source path, source SHA-256 and point count.
+- `<algorithm-id>/registered.ply` retains the full converted Step 7 cloud.
+- `<algorithm-id>/metrics.json` contains input paths, algorithm/reference point
+  counts, threshold, `additional_downsampling: false`, and a `metrics` object
+  containing the eight fields listed above.
+- Conversion checks require the PLY vertex count to match the LAZ point count.
+  Evaluation additionally checks decoded point counts, finite XYZ coordinates and
+  finite metric values.
+- `evaluation.log` contains converter output, evaluation progress and metric values.
+  Watch this file during long full-cloud evaluations.
+- CSV and Markdown summaries contain selected algorithm IDs, statuses, point
+  counts, metric values and errors. The CSV also records the Step 7 status and
+  input paths. Failed/unavailable metrics remain blank in CSV and `-` in Markdown,
+  not zero-valued results.
+
+CSV/JSON paths use container prefixes: `/data` is the dataset directory,
+`/registration` is the selected Step 7 directory, and `/evaluation` is the output
+directory.
+
+## Missing inputs, failures and reruns:
+
+Missing FARO or a missing/empty Step 7 report aborts before the image build.
+Malformed reports abort evaluation. Algorithm results are reported individually
+with these statuses:
+
+| Status | Meaning |
+| --- | --- |
+| `evaluated` | Conversion and evaluation succeeded |
+| `not_registered` | Step 7 status is missing, failed, ambiguous, existing, or unreported |
+| `missing_input` | Step 7 claims success, but its LAZ is missing or empty |
+| `existing` | An evaluation folder already exists; it is not overwritten |
+| `failed` | FARO preparation, conversion, loading, or metric computation failed |
+
+Remaining algorithms are processed after an individual failure. The script returns
+nonzero unless every selected algorithm is evaluated successfully. The last run's
+summaries are replaced and updated as algorithms finish; an interrupted run can
+leave `pending` rows and partial files.
+
+Existing per-algorithm output directories, including partial results, are never
+overwritten or silently reused. For a fresh full run, pass a new `--output-dir`.
+For a subset retry in the same output directory, restrict `ONLY_ALGOS` and move
+those algorithms' existing result folders aside first. The cached FARO conversion
+is reused only when its source path, SHA-256 and point counts match; its conversion
+log is appended with the reload result. An incomplete reference conversion or
+changed FARO source requires a new output directory. Original Step 7 and FARO
+files are never modified.
+
+# Optional utilities
+
+## HDMapping session export (optional)
+
+The benchmark pipeline includes rigid registration in Step 7 and FARO evaluation
+in Step 8. The separate
+HDMapping Step 2 exports below are **not required for benchmarking** and are not
+inputs to the Step 7 registration stage. The
+[HDMapping export utility](utilities/hdmapping_export/) is separate from the
+numbered steps and is never invoked by `start_benchmark.sh`.
+
+This utility image uses HDMapping's `multi_view_tls_registration_step_2` application
+to export each algorithm's existing session as a merged global point cloud and
+trajectory, useful for inspection or use in other applications. It does not optimize
+registration or calculate point-cloud metrics. Use the current algorithm outputs
+after Step 4 if you want exports of the registered poses; the utility does not read
+the backup copies.
+
+### Prerequisites:
+
+- Docker must be installed, running and accessible to your user.
+- Step 3 must have produced HDMapping sessions and their referenced scans, poses
+  and trajectory files.
+- Internet access is needed for the first image build. Like Step 4, the Ubuntu
+  24.04 image recursively clones HDMapping's default branch (main), without
+  pinning a revision, and installs CMake 4.0.0 for Linux x86_64. No local HDMapping
+  checkout, GPU or display server is required. Git uses HTTP/1.1 to avoid the
+  HTTP/2 authentication errors observed when fetching public submodules in Docker;
+  no GitHub credentials are needed.
+- Allow sufficient RAM for loading one complete algorithm session and sufficient
+  disk space for the image and merged point clouds. Algorithms are exported
+  sequentially. Compilation defaults to two parallel jobs to limit memory usage.
+
+### Make the script executable (if not done yet):
+
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh
+```
+
+### Change directory to the data folder:
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
+
+### Run the utility (only if you need these exports):
+
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh
+```
+
+The script builds the `hdmapping_export` Docker image (reusing Docker's build cache
+on subsequent runs) and exports every algorithm listed in
+[algorithms.conf](algorithms.conf). Inputs are mounted read-only, and exports are
+owned by the invoking user. Skipping this utility has no effect on the benchmark.
+
+To export only selected algorithms:
+
+```shell
+ONLY_ALGOS="fast-lio sr-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh
+```
+
+Use the exact, case-sensitive algorithm IDs from [algorithms.conf](algorithms.conf).
+Unknown IDs abort before building the image.
+
+To change input/output directories and reduce compilation to one parallel job:
+
+```shell
+HDMAPPING_BUILD_JOBS=1 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh \
+    --data-dir "$HOME/hdmapping-benchmark/data" \
+    --output-dir "$HOME/hdmapping-benchmark/hdmapping_exports"
+```
+
+The default input is `~/hdmapping-benchmark/data`; the default output is
+`<data-dir>/hdmapping_exports`. Relative paths are resolved from the calling directory.
+Run with `--help` to display usage.
+
+The former Step 7 directory, runner and image have been renamed to this utility.
+Existing `step7_exports` folders are not moved or deleted; their files remain usable.
+Pass a new `--output-dir` when exporting again to avoid overwriting existing files.
+
+### Result:
+
+For each selected algorithm, the utility reads exactly one of:
+
+```text
+<data-dir>/<algorithm-id>/output_hdmapping-<output>/session.json
+<data-dir>/<algorithm-id>/output_hdmapping-<output>/session.mjs
+```
+
+`<output>` is the output column of [algorithms.conf](algorithms.conf), which may
+differ from the algorithm ID. If both session files exist, the algorithm is
+reported as ambiguous; retain only the intended session file before running.
+Backups, ground truth and previous exports are not discovered recursively.
+
+Successful exports produce:
+
+```text
+<output-dir>/
+├── fast-lio/
+│   ├── all_step_2.laz
+│   └── trajectories.csv
+└── logs/
+    └── fast-lio.log
+```
+
+- `all_step_2.laz`: merged point cloud transformed using the session's poses.
+- `trajectories.csv`: quaternion trajectory with LiDAR and Unix timestamps.
+  Missing Unix timestamps are reported by HDMapping and remain zero.
+- `logs/<algorithm-id>.log`: application output for each attempted export.
+
+The command uses full-resolution headless defaults, without `--same-as-gui`
+decimation or trajectory downsampling. Original benchmark files are not modified.
+
+### Missing inputs, failures and reruns:
+
+Missing sessions and failed exports are reported individually; remaining algorithms
+are still processed. The final summary lists selected, exported, missing and failed
+counts. The command returns nonzero if any selected algorithm is missing or fails,
+or if nothing is exported. A zero exit status requires both nonempty export files
+for every selected algorithm.
+
+Existing export files are never overwritten or silently skipped. For another full
+run, use a new `--output-dir`. To retry missing/failed algorithms after correcting
+their inputs, restrict `ONLY_ALGOS` to those IDs. Failed exports may leave partial
+files; move those algorithm export folders aside or choose a new output directory
+before retrying. Logs for attempted exports are replaced on a retry; logs belonging
+to algorithms refused because of existing exports are retained.
+
 ## Benchmark Result (04.07.2026)
 
 # APE (Absolute Pose Error)
@@ -415,4 +915,3 @@ keywords = {LiDAR odometry, LiDAR-inertial odometry, Benchmarking},
 abstract = {This paper describes a software toolbox for LiDAR (Light Detection and Ranging) and LiDAR-Inertial Odometry qualitative and quantitative evaluation. We provide software as https://github.com/MapsHD organization with all necessary information at https://github.com/MapsHD/HDMapping. Our software contributions are a) ground truth data processing tool, b) dockerized state-of-the-art LO and LIO algorithms, c) multi-session data registration to common coordinate system, d) Absolute Pose Error (APE) and Relative Pose Error (RPE) metrics, e) import/export tools for easier 3D data handling and visualizing, e.g., in Cloud Compare software. This software is compatible with ROS1 (Robot Operating System) and ROS2 data formats. We show an example benchmark of LeGO-LOAM, LIO-SAM, FAST-LIO, DLO, VoxelMap, Faster-LIO, KISS-ICP, CT-ICP, SLICT, DLIO, GLIM, iG-LIO, LIO-EKF, I2EKF-LO, GenZ-ICP, RESPLE, odometry_ros_wrapper, Point-LIO, and LOAM-Livox algorithms. For all experiments we provide movies. The contribution of the paper is software-oriented LO/LIO algorithm benchmark suite. The novelty lies in the integration of multiple benchmarking steps into a unified framework, thus overall effort needed for qualitative and quantitative evaluation is reduced.}
 }
 ```
-

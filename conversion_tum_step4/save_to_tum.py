@@ -14,7 +14,7 @@ CONF_PATH = os.environ.get("ALGOS_CONF", "/workspace/algorithms.conf")
 
 # The ground truth is not an algorithm, so it is named here rather than in
 # algorithms.conf, and it must stay first in the list.
-GROUND_TRUTH = "/data/ground_truth/HDMappingGroundTruth/lio_result_0/session.mjs"
+GROUND_TRUTH = "/data/HDMappingGroundTruth/lio_result_0/session.mjs"
 
 
 def read_algorithms(path):

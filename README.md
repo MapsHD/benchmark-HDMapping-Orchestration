@@ -302,6 +302,133 @@ trajectory_lio_*.csv
 
 ~/hdmapping-benchmark/data/tum
 
+# Optional utilities
+
+## HDMapping session export (optional)
+
+The benchmark pipeline ends at Step 6. HDMapping Step 2 exports are **not required
+for benchmarking** and are not used to calculate benchmark results. The
+[HDMapping export utility](utilities/hdmapping_export/) is separate from the
+numbered steps and is never invoked by `start_benchmark.sh`.
+
+This utility image uses HDMapping's `multi_view_tls_registration_step_2` application
+to export each algorithm's existing session as a merged global point cloud and
+trajectory, useful for inspection or use in other applications. It does not optimize
+registration or calculate point-cloud metrics. Use the current algorithm outputs
+after Step 4 if you want exports of the registered poses; the utility does not read
+the backup copies.
+
+### Prerequisites:
+
+- Docker must be installed, running and accessible to your user.
+- Step 3 must have produced HDMapping sessions and their referenced scans, poses
+  and trajectory files.
+- Internet access is needed for the first image build. Like Step 4, the Ubuntu
+  24.04 image recursively clones HDMapping's default branch (main), without
+  pinning a revision, and installs CMake 4.0.0 for Linux x86_64. No local HDMapping
+  checkout, GPU or display server is required. Git uses HTTP/1.1 to avoid the
+  HTTP/2 authentication errors observed when fetching public submodules in Docker;
+  no GitHub credentials are needed.
+- Allow sufficient RAM for loading one complete algorithm session and sufficient
+  disk space for the image and merged point clouds. Algorithms are exported
+  sequentially. Compilation defaults to two parallel jobs to limit memory usage.
+
+### Make the script executable (if not done yet):
+
+```shell
+chmod +x ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh
+```
+
+### Change directory to the data folder:
+
+```shell
+cd ~/hdmapping-benchmark/data
+```
+
+### Run the utility (only if you need these exports):
+
+```shell
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh
+```
+
+The script builds the `hdmapping_export` Docker image (reusing Docker's build cache
+on subsequent runs) and exports every algorithm listed in
+[algorithms.conf](algorithms.conf). Inputs are mounted read-only, and exports are
+owned by the invoking user. Skipping this utility has no effect on the benchmark.
+
+To export only selected algorithms:
+
+```shell
+ONLY_ALGOS="fast-lio sr-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh
+```
+
+Use the exact, case-sensitive algorithm IDs from [algorithms.conf](algorithms.conf).
+Unknown IDs abort before building the image.
+
+To change input/output directories and reduce compilation to one parallel job:
+
+```shell
+HDMAPPING_BUILD_JOBS=1 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/utilities/hdmapping_export/run_hdmapping_export.sh \
+    --data-dir "$HOME/hdmapping-benchmark/data" \
+    --output-dir "$HOME/hdmapping-benchmark/hdmapping_exports"
+```
+
+The default input is `~/hdmapping-benchmark/data`; the default output is
+`<data-dir>/hdmapping_exports`. Relative paths are resolved from the calling directory.
+Run with `--help` to display usage.
+
+The former Step 7 directory, runner and image have been renamed to this utility.
+Existing `step7_exports` folders are not moved or deleted; their files remain usable.
+Pass a new `--output-dir` when exporting again to avoid overwriting existing files.
+
+### Result:
+
+For each selected algorithm, the utility reads exactly one of:
+
+```text
+<data-dir>/<algorithm-id>/output_hdmapping-<output>/session.json
+<data-dir>/<algorithm-id>/output_hdmapping-<output>/session.mjs
+```
+
+`<output>` is the output column of [algorithms.conf](algorithms.conf), which may
+differ from the algorithm ID. If both session files exist, the algorithm is
+reported as ambiguous; retain only the intended session file before running.
+Backups, ground truth and previous exports are not discovered recursively.
+
+Successful exports produce:
+
+```text
+<output-dir>/
+├── fast-lio/
+│   ├── all_step_2.laz
+│   └── trajectories.csv
+└── logs/
+    └── fast-lio.log
+```
+
+- `all_step_2.laz`: merged point cloud transformed using the session's poses.
+- `trajectories.csv`: quaternion trajectory with LiDAR and Unix timestamps.
+  Missing Unix timestamps are reported by HDMapping and remain zero.
+- `logs/<algorithm-id>.log`: application output for each attempted export.
+
+The command uses full-resolution headless defaults, without `--same-as-gui`
+decimation or trajectory downsampling. Original benchmark files are not modified.
+
+### Missing inputs, failures and reruns:
+
+Missing sessions and failed exports are reported individually; remaining algorithms
+are still processed. The final summary lists selected, exported, missing and failed
+counts. The command returns nonzero if any selected algorithm is missing or fails,
+or if nothing is exported. A zero exit status requires both nonempty export files
+for every selected algorithm.
+
+Existing export files are never overwritten or silently skipped. For another full
+run, use a new `--output-dir`. To retry missing/failed algorithms after correcting
+their inputs, restrict `ONLY_ALGOS` to those IDs. Failed exports may leave partial
+files; move those algorithm export folders aside or choose a new output directory
+before retrying. Logs for attempted exports are replaced on a retry; logs belonging
+to algorithms refused because of existing exports are retained.
+
 ## Benchmark Result (04.07.2026)
 
 # APE (Absolute Pose Error)
@@ -415,4 +542,3 @@ keywords = {LiDAR odometry, LiDAR-inertial odometry, Benchmarking},
 abstract = {This paper describes a software toolbox for LiDAR (Light Detection and Ranging) and LiDAR-Inertial Odometry qualitative and quantitative evaluation. We provide software as https://github.com/MapsHD organization with all necessary information at https://github.com/MapsHD/HDMapping. Our software contributions are a) ground truth data processing tool, b) dockerized state-of-the-art LO and LIO algorithms, c) multi-session data registration to common coordinate system, d) Absolute Pose Error (APE) and Relative Pose Error (RPE) metrics, e) import/export tools for easier 3D data handling and visualizing, e.g., in Cloud Compare software. This software is compatible with ROS1 (Robot Operating System) and ROS2 data formats. We show an example benchmark of LeGO-LOAM, LIO-SAM, FAST-LIO, DLO, VoxelMap, Faster-LIO, KISS-ICP, CT-ICP, SLICT, DLIO, GLIM, iG-LIO, LIO-EKF, I2EKF-LO, GenZ-ICP, RESPLE, odometry_ros_wrapper, Point-LIO, and LOAM-Livox algorithms. For all experiments we provide movies. The contribution of the paper is software-oriented LO/LIO algorithm benchmark suite. The novelty lies in the integration of multiple benchmarking steps into a unified framework, thus overall effort needed for qualitative and quantitative evaluation is reduced.}
 }
 ```
-

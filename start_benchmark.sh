@@ -5,7 +5,7 @@ set -e
 usage() {
     echo "Usage: $0 [algo ...]"
     echo
-    echo "Runs the whole benchmark pipeline (steps 1-6)."
+    echo "Runs the whole benchmark pipeline (steps 1-7)."
     echo "Optionally pass algorithm ids (the 'id' column of algorithms.conf) to"
     echo "clone, build, run and evaluate only those, e.g.:"
     echo "  $0 sr-lio r-voxelmap pv-lio rko-lio pin-slam"
@@ -20,7 +20,7 @@ fi
 DATA_DIR=~/hdmapping-benchmark/data
 REPO_DIR=~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
 
-# Optional algorithm subset, exported so steps 2, 3 and 4 pick it up.
+# Optional algorithm subset, exported so steps 2, 3, 4 and 7 pick it up.
 if [[ $# -gt 0 ]]; then
     export ONLY_ALGOS="$*"
     echo "=== Restricting the benchmark to: $ONLY_ALGOS ==="
@@ -139,5 +139,10 @@ else
     echo "ERROR: neither python3 nor python found on machine"
     exit 1
 fi
+
+sleep 5
+
+echo "=== Step 7: registration_step7 ==="
+bash "$REPO_DIR/registration_step7/run_registration_step7.sh" --data-dir "$DATA_DIR"
 
 echo "=== DONE ==="

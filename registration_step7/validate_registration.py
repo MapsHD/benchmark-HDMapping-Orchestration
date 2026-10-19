@@ -92,7 +92,7 @@ def validate_registration(
     if bucket_size is not None and recorded_bucket != bucket_size:
         raise ValueError(
             f"saved bucket size is {recorded_bucket}, requested {bucket_size}; "
-            "use --force or a separate output directory"
+            "rerun registration without --no-force or use a separate output directory"
         )
     return points
 

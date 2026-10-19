@@ -7,7 +7,7 @@ DATA_DIR="${DATA_DIR:-/data}"
 OUTPUT_DIR="${OUTPUT_DIR:-/results}"
 GROUND_TRUTH="$DATA_DIR/HDMappingGroundTruth/lio_result_0/session.mjs"
 BUCKET_SIZE="${BUCKET_SIZE:-0.05}"
-FORCE="${FORCE_OVERWRITE:-false}"
+FORCE="${FORCE_OVERWRITE:-true}"
 
 source "$SCRIPT_DIR/../algos_lib.sh"
 check_only_algos

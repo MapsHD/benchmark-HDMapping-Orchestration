@@ -3,7 +3,7 @@
 set -e
 
 usage() {
-    echo "Usage: $0 [--bucket-size METERS] [--voxel-size METERS] [--threshold METERS] [--jobs N] [algo ...]"
+    echo "Usage: $0 [--bucket-size METERS] [--voxel-size METERS] [--threshold METERS] [--jobs N] [--no-force] [algo ...]"
     echo
     echo "Runs the whole benchmark pipeline (steps 1-8)."
     echo "Checks workspace setup, dataset and prerequisite Docker images first."
@@ -16,6 +16,8 @@ usage() {
     echo "These settings are independent and validated before any stage runs."
     echo "Use --jobs N for simultaneous Step 8 evaluations (default: 1; positive integer)."
     echo "Step 8 shows per-worker progress and merges reports after all workers finish."
+    echo "Steps 7 and 8 permanently replace selected results by default."
+    echo "Use --no-force to preserve their existing results."
     echo "No algorithm ids = all algorithms. An unknown id aborts with the known list."
 }
 
@@ -24,6 +26,7 @@ BUCKET_SIZE=0.05
 VOXEL_SIZE=0.05
 THRESHOLD=0.05
 JOBS=1
+OVERWRITE_ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -h|--help)
@@ -49,6 +52,10 @@ while [[ $# -gt 0 ]]; do
             fi
             JOBS="$2"
             shift 2
+            ;;
+        --no-force)
+            OVERWRITE_ARGS=("$1")
+            shift
             ;;
         -*)
             echo "ERROR: unknown argument: $1" >&2
@@ -215,7 +222,8 @@ sleep 5
 echo "=== Step 7: registration_step7 ==="
 bash "$REPO_DIR/registration_step7/run_registration_step7.sh" \
     --data-dir "$DATA_DIR" \
-    --bucket-size "$BUCKET_SIZE"
+    --bucket-size "$BUCKET_SIZE" \
+    "${OVERWRITE_ARGS[@]}"
 
 sleep 5
 
@@ -224,6 +232,7 @@ bash "$REPO_DIR/point_cloud_evaluation_step8/run_evaluation_step8.sh" \
     --data-dir "$DATA_DIR" \
     --voxel-size "$VOXEL_SIZE" \
     --threshold "$THRESHOLD" \
-    --jobs "$JOBS"
+    --jobs "$JOBS" \
+    "${OVERWRITE_ARGS[@]}"
 
 echo "=== DONE ==="

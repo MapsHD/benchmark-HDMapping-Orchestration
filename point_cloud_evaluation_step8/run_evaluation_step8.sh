@@ -10,14 +10,14 @@ REGISTRATION_DIR=""
 OUTPUT_DIR=""
 BUILD_JOBS="${HDMAPPING_BUILD_JOBS:-2}"
 MERGE_ONLY=false
-FORCE=false
+FORCE=true
 VOXEL_SIZE=0.05
 THRESHOLD=0.05
 JOBS=1
 
 usage() {
     echo "Usage: $0 [--data-dir DIRECTORY] [--registration-dir DIRECTORY] [--output-dir DIRECTORY]"
-    echo "          [--voxel-size METERS] [--threshold METERS] [--jobs N] [--merge-only | --force]"
+    echo "          [--voxel-size METERS] [--threshold METERS] [--jobs N] [--no-force] [--merge-only]"
     echo
     echo "Step 8: compare Step 7 registered clouds against the FARO ground-truth LAZ."
     echo "Input defaults to \$HOME/hdmapping-benchmark/data."
@@ -34,9 +34,9 @@ usage() {
     echo "Only one run can write to an evaluation output directory at a time."
     echo "Runs the upstream evaluator CLI with its default NN cache and RMSE behavior."
     echo "Use --merge-only to rebuild summaries from saved results without evaluating clouds."
-    echo "Use --force to permanently replace selected eligible maps' results and reevaluate."
+    echo "Selected eligible maps' result folders are permanently replaced by default, except in --merge-only mode."
+    echo "Use --no-force to preserve existing evaluation folders."
     echo "Step 7 results marked registered, or validated completed existing registrations, are eligible."
-    echo "Existing evaluation results are preserved."
     echo "Unregistered algorithms are skipped, not counted as evaluation failures."
 }
 
@@ -81,8 +81,8 @@ while [[ $# -gt 0 ]]; do
             JOBS="$2"
             shift 2
             ;;
-        --force)
-            FORCE=true
+        --no-force)
+            FORCE=false
             shift
             ;;
         *)
@@ -93,9 +93,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ "$FORCE" == true && "$MERGE_ONLY" == true ]]; then
-    echo "ERROR: --force cannot be combined with --merge-only" >&2
-    exit 1
+if [[ "$MERGE_ONLY" == true ]]; then
+    FORCE=false
 fi
 
 source "$REPO_DIR/algos_lib.sh"
@@ -183,8 +182,9 @@ echo "Voxel size: $VOXEL_SIZE m; precision/recall threshold: $THRESHOLD m"
 EVALUATION_ARGS=(--voxel-size "$VOXEL_SIZE" --threshold "$THRESHOLD" --jobs "$JOBS")
 DOCKER_ARGS=(--rm --init --sig-proxy=true)
 if [[ "$FORCE" == true ]]; then
-    EVALUATION_ARGS+=(--force)
-    echo "WARNING: --force will permanently replace selected eligible evaluation results."
+    echo "WARNING: selected eligible evaluation results will be permanently replaced (default; use --no-force to preserve them)."
+else
+    EVALUATION_ARGS+=(--no-force)
 fi
 if [[ "$MERGE_ONLY" == true ]]; then
     EVALUATION_ARGS+=(--merge-only)

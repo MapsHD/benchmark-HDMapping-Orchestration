@@ -8,11 +8,11 @@ IMAGE_NAME="hdmapping_rigid_registration"
 DATA_DIR="$HOME/hdmapping-benchmark/data"
 OUTPUT_DIR=""
 BUILD_JOBS="${HDMAPPING_BUILD_JOBS:-2}"
-FORCE=false
+FORCE=true
 BUCKET_SIZE=0.05
 
 usage() {
-    echo "Usage: $0 [--data-dir DIRECTORY] [--output-dir DIRECTORY] [--bucket-size METERS] [--force]"
+    echo "Usage: $0 [--data-dir DIRECTORY] [--output-dir DIRECTORY] [--bucket-size METERS] [--no-force]"
     echo
     echo "Step 7: rigidly register each algorithm session to HDMappingGroundTruth."
     echo "Input defaults to \$HOME/hdmapping-benchmark/data."
@@ -21,8 +21,8 @@ usage() {
     echo "Use --bucket-size METERS for both sessions' downsampling bucket (default: 0.05 m)."
     echo "Set ONLY_ALGOS=\"id1 id2 ...\" to select algorithms from algorithms.conf."
     echo "Set HDMAPPING_BUILD_JOBS to limit compilation parallelism (default: 2)."
-    echo "Completed existing registrations are validated and reused; other existing folders are not overwritten."
-    echo "Use --force to permanently replace selected algorithms' result folders and rerun registration."
+    echo "Selected algorithms' result folders are permanently replaced by default once a source session is available."
+    echo "Use --no-force to reuse validated completed registrations and preserve other existing folders."
     echo "Partial registration succeeds if at least one algorithm registers; Step 8 skips the rest."
 }
 
@@ -44,8 +44,8 @@ while [[ $# -gt 0 ]]; do
             fi
             shift 2
             ;;
-        --force)
-            FORCE=true
+        --no-force)
+            FORCE=false
             shift
             ;;
         --bucket-size)
@@ -121,7 +121,7 @@ echo "Input: $DATA_DIR"
 echo "Ground truth: $GROUND_TRUTH"
 echo "Registration results: $OUTPUT_DIR"
 if [[ "$FORCE" == true ]]; then
-    echo "WARNING: --force will permanently replace selected registration results."
+    echo "WARNING: selected registration results will be permanently replaced (default; use --no-force to preserve them)."
 fi
 
 docker run --rm \

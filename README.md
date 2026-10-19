@@ -171,6 +171,7 @@ algorithms are selected unless `ONLY_ALGOS` is already set.
 | `--voxel-size METERS` | Step 8 voxel filtering of both clouds; `0` disables it | `0.05 m` |
 | `--threshold METERS` | Step 8 precision/recall agreement threshold | `0.05 m` |
 | `--jobs N` | Simultaneous Step 8 algorithm evaluations | `1` |
+| `--no-force` | Preserve existing Step 7/8 result folders instead of replacing them | Off |
 | `algo ...` | Selected algorithm IDs | All, or `ONLY_ALGOS` if set |
 | `ONLY_ALGOS` | Environment-based algorithm selection when no IDs are passed | Unset |
 | `HDMAPPING_BUILD_JOBS` | Step 7/8 image compilation parallelism | `2` |
@@ -181,9 +182,10 @@ and positive; voxel size must be finite and nonnegative. Jobs must be a positive
 integer and affect Step 8 only. CLI settings are validated before any stage runs.
 
 The runner uses `~/hdmapping-benchmark/data` and the standard output directories;
-it does not expose path options. Steps 7 and 8 do not overwrite results by default.
-For incompatible existing results, use the individual runners' `--force` or
-separate output directories. See [Step 7](#step-7-register-algorithm-point-clouds-to-ground-truth)
+it does not expose path options. **Steps 7 and 8 permanently replace selected
+results by default.** Use `--no-force` to preserve their existing result folders,
+or separate output directories with the individual runners to keep multiple runs.
+See [Step 7](#step-7-register-algorithm-point-clouds-to-ground-truth)
 and [Step 8](#step-8-evaluate-registered-point-clouds-against-faro).
 
 ## 2.2 Step by step
@@ -406,8 +408,8 @@ cd ~/hdmapping-benchmark/data
     --bucket-size 0.025
 ```
 
-For existing results with a different bucket size, add `--force` to replace
-selected result folders, or use a separate `--output-dir`.
+Selected result folders are replaced by default, including when changing bucket
+size. Use a separate `--output-dir` to keep multiple runs.
 
 #### Run selected algorithms with defaults
 
@@ -465,36 +467,37 @@ remaining algorithms continue. If at least one algorithm registers successfully,
 the master pipeline continues to Step 8 using those successful registrations.
 The command returns nonzero if none register or a stage-level error occurs.
 
-Completed registrations are validated and reused without overwriting files;
+**Selected registration folders are permanently replaced by default**, including
+logs and partial outputs, once a valid, unambiguous source session is available.
+Other algorithms and source data are untouched. Stop other runs writing to these
+folders first.
+
+With `--no-force`, completed registrations are validated and reused without overwriting files;
 their report status is `registered`. Reuse requires successful completion and
 output-validation records in the log, no failure diagnostics, nonempty sanity-check
 trajectories, a valid LAZ header and a recorded bucket size matching the requested
-value. An unrecorded or different bucket size requires `--force` or a separate output
-directory. These checks verify completion, not whether
-source sessions or ground truth have changed; use `--force` or a separate
-`--output-dir` to register changed inputs.
+value. An unrecorded or different bucket size cannot be reused.
+These checks verify completion, not whether source sessions or ground truth have
+changed. To register changed inputs or settings, run without `--no-force` or use
+a separate `--output-dir`.
 
-Incomplete or invalid folders are preserved and reported as `existing`.
+With `--no-force`, incomplete or invalid folders are preserved and reported as `existing`.
 To retry, select a subset with `ONLY_ALGOS` and move its folders aside, or use a
 separate output directory. Each run replaces `registration_summary.csv`.
 
-To replace selected registration results and rerun:
+To preserve selected registration folders and reuse completed results:
 
 ```shell
 cd ~/hdmapping-benchmark/data
-ONLY_ALGOS="fast-lio sr-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh --force
+ONLY_ALGOS="fast-lio sr-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/registration_step7/run_registration_step7.sh --no-force
 ```
-
-**`--force` permanently removes selected algorithms' result folders**, including
-logs and partial outputs, once a valid source session is available. Other algorithms
-and source data are untouched. Stop other runs writing to these folders first.
 
 #### Arguments and defaults
 
 | Argument or setting | Purpose | Default |
 | --- | --- | --- |
 | `--bucket-size METERS` | Per-scan downsampling of both sessions | `0.05 m` |
-| `--force` | Permanently replace selected results and rerun registration | Off |
+| `--no-force` | Reuse validated completed registrations; preserve other existing folders | Off |
 | `--data-dir DIRECTORY` | Dataset and algorithm session directory | `~/hdmapping-benchmark/data` |
 | `--output-dir DIRECTORY` | Registration results | `<data-dir>/step7_registration` |
 | `ONLY_ALGOS` | Selected algorithm IDs | All |
@@ -566,7 +569,8 @@ Voxel size must be finite and nonnegative; threshold must be finite and positive
 The settings are independent: Step 7's bucket removes points within individual
 scans, Step 8's voxel filter downsamples each merged cloud, and the threshold
 defines agreement. They do not automatically change one another.
-To reevaluate the default output directory, use `--force` with the desired settings.
+Evaluation replaces selected eligible result folders by default. Use `--no-force`
+to preserve existing folders instead.
 Use the same bucket, voxel and threshold settings for comparisons across algorithms;
 different settings produce different metrics.
 
@@ -698,7 +702,7 @@ Missing FARO or a missing/invalid Step 7 report aborts the stage.
 | `evaluated` | Conversion and evaluation succeeded |
 | `not_registered` | Skipped: Step 7 status is missing, failed, ambiguous, unreported, or existing but not validated |
 | `missing_input` | Step 7 claims success, but its LAZ is missing or empty |
-| `existing` | An evaluation folder already exists; it is not overwritten |
+| `existing` | With `--no-force`, an evaluation folder already exists and is not overwritten |
 | `failed` | FARO preparation, conversion, loading, or metric computation failed |
 
 Individual failures do not prevent remaining maps from being evaluated. The
@@ -713,24 +717,25 @@ Orderly interruption attempts a partial final summary with failed rows for
 unfinished algorithms. Abrupt termination can leave the previous combined reports
 in place; use `--merge-only` to rebuild them from saved per-algorithm reports.
 
-Per-algorithm folders are not overwritten unless `--force` is supplied. Use a
-separate `--output-dir`, select a retry subset and move its folders aside, or
-force reevaluation:
+**Selected eligible algorithms' evaluation folders are permanently replaced by
+default**, including metrics, logs and converted PLYs. Unregistered algorithms
+and Step 7 inputs are untouched. Stop other runs writing to these folders first.
+Use a separate `--output-dir` to keep multiple runs.
+
+To preserve existing per-algorithm folders instead (reported as `existing`,
+without reevaluating or reusing their saved metrics):
 
 ```shell
 cd ~/hdmapping-benchmark/data
 ONLY_ALGOS="fast-lio sr-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_evaluation_step8/run_evaluation_step8.sh \
-    --force
+    --no-force
 ```
 
-**`--force` permanently removes selected eligible algorithms' evaluation folders**,
-including metrics, logs and converted PLYs. Unregistered algorithms and Step 7
-inputs are untouched. Stop other runs writing to these folders first.
 Cached FARO conversion is reused only when its path, SHA-256 and point count
 match. Cached PLYs are full-resolution; changing voxel size does not require
-reconversion. `--force` also rebuilds an incomplete or incompatible FARO cache;
-otherwise use a separate output directory. Do not merge results evaluated against
-different references. `--force` cannot be combined with `--merge-only`.
+reconversion. An incomplete or incompatible FARO cache is rebuilt by default;
+with `--no-force`, it causes an error instead. Do not merge results evaluated
+against different references. `--merge-only` disables replacement automatically.
 
 #### Merge saved results without reevaluating
 
@@ -761,7 +766,7 @@ fingerprints; hashing reads the LAZ files from disk. Supply the evaluation's exa
 voxel size and threshold; mismatched results are rejected. Successful results must
 record `evaluation_backend: "pointcloud_metrics_cli"` and the `rmse_m` field.
 Results with a different backend or RMSE definition require reevaluation with
-`--force` or a separate output directory.
+default replacement or a separate output directory.
 
 Results without fingerprints trigger a warning and are checked by paths, counts
 and FARO provenance only; same-count algorithm input changes cannot be detected.
@@ -776,7 +781,7 @@ Merge-only neither resumes evaluation nor changes per-map files.
 | `--voxel-size METERS` | Voxel filtering of both clouds; `0` disables it | `0.05 m` |
 | `--threshold METERS` | Strict precision/recall agreement threshold | `0.05 m` |
 | `--jobs N` | Simultaneous algorithm evaluations | `1` |
-| `--force` | Permanently replace selected eligible results and reevaluate | Off |
+| `--no-force` | Preserve existing evaluation folders rather than replace them | Off |
 | `--merge-only` | Rebuild summaries from saved reports without evaluating | Off |
 | `--data-dir DIRECTORY` | Dataset directory containing FARO | `~/hdmapping-benchmark/data` |
 | `--registration-dir DIRECTORY` | Step 7 results | `<data-dir>/step7_registration` |
@@ -786,7 +791,7 @@ Merge-only neither resumes evaluation nor changes per-map files.
 | `--help` | Show usage | Not set |
 
 Voxel size must be finite and nonnegative, threshold finite and positive, and jobs
-a positive integer. `--force` and `--merge-only` are mutually exclusive.
+a positive integer. Merge-only disables replacement even without `--no-force`.
 The FARO input is `<data-dir>/TLS-FARO-Focus/map_gt_0.01.laz`.
 Relative paths are resolved from the calling directory. Inputs are read-only;
 outputs are owned by the invoking user.

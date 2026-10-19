@@ -464,7 +464,7 @@ def remove_result_folder(folder: Path, output: Path, worker: Worker | None = Non
 
 def prepare_reference(
     source: Path, output: Path, provenance: ReferenceProvenance, control: RunControl, *,
-    force: bool = False,
+    force: bool = True,
 ) -> Path:
     count = laz_point_count(source)
     folder = output / "reference"
@@ -473,12 +473,12 @@ def prepare_reference(
     if folder.exists() or folder.is_symlink():
         try:
             if folder.is_symlink() and force:
-                raise ValueError("cannot reuse a symlinked FARO cache with --force")
+                raise ValueError("cannot reuse a symlinked FARO cache when replacement is enabled")
             if not metadata.is_file():
-                raise ValueError(f"incomplete reference conversion at {folder}; use --force or a separate output directory")
+                raise ValueError(f"incomplete reference conversion at {folder}; rerun without --no-force or use a separate output directory")
             with metadata.open() as handle:
                 if json.load(handle) != provenance:
-                    raise ValueError(f"FARO reference has changed; use --force or a separate output directory instead of {folder}")
+                    raise ValueError(f"FARO reference has changed; rerun without --no-force or use a separate output directory instead of {folder}")
             if ply_point_count(ply) != count:
                 raise ValueError(f"cached FARO PLY has an unexpected point count: {ply}")
         except (OSError, ValueError) as error:
@@ -500,7 +500,7 @@ def prepare_reference(
 
 def validate_metrics(metrics: object, label: str) -> dict[str, float]:
     if not isinstance(metrics, dict) or set(metrics) != set(METRIC_FIELDS):
-        raise ValueError(f"{label} lacks the expected metrics; use --force or a separate output directory")
+        raise ValueError(f"{label} lacks the expected metrics; reevaluate with default replacement or use a separate output directory")
     if any(
         type(value) not in (int, float) or not math.isfinite(value) or value < 0
         for value in metrics.values()
@@ -629,7 +629,7 @@ def evaluate_algorithm(
     reference_sha256: str,
     reference_ply: Path,
     worker: Worker,
-    force: bool = False,
+    force: bool = True,
     *,
     voxel_size: float,
     threshold: float,
@@ -703,7 +703,7 @@ def read_saved_result(
     if document.get("evaluation_backend") != EVALUATION_BACKEND:
         raise ValueError(
             f"saved result is not from the upstream CLI: {path}; "
-            "use --force or a separate output directory"
+            "reevaluate with default replacement or use a separate output directory"
         )
     counts = {}
     for prefix, count in (("algorithm", laz_point_count(source)), ("reference", provenance["points"])):
@@ -873,10 +873,13 @@ def main() -> int:
         "--threshold", type=positive_distance, default=THRESHOLD_M,
         help="precision/recall distance threshold in meters (default: 0.05)",
     )
-    mode = parser.add_mutually_exclusive_group()
-    mode.add_argument("--merge-only", action="store_true", help="rebuild summaries from saved per-map results")
-    mode.add_argument("--force", action="store_true", help="replace selected eligible maps' result folders and reevaluate")
+    parser.add_argument("--merge-only", action="store_true", help="rebuild summaries without replacing per-map results")
+    parser.add_argument(
+        "--no-force", dest="force", action="store_false",
+        help="preserve existing evaluation folders instead of replacing them",
+    )
     args = parser.parse_args()
+    args.force = args.force and not args.merge_only
     progress(f"Step 8 {'merge' if args.merge_only else f'evaluation (jobs={args.jobs})'} started")
     data = args.data_dir.resolve(strict=True)
     registration = args.registration_dir.resolve(strict=True)
@@ -903,6 +906,8 @@ def run_locked(
     reference_source = data / "TLS-FARO-Focus/map_gt_0.01.laz"
     report = read_registration_report(registration / "registration_summary.csv")
     algorithms = selected_algorithms()
+    if args.force:
+        progress("WARNING: selected eligible evaluation results will be permanently replaced; use --no-force to preserve them")
     if args.merge_only:
         with timed_phase("Hashing FARO reference for merge validation"):
             provenance = reference_provenance(reference_source)

@@ -48,7 +48,8 @@ RUN wget https://github.com/Kitware/CMake/releases/download/v4.0.0/cmake-4.0.0-l
 
 WORKDIR /workspace
 
-RUN git clone https://github.com/MapsHD/HDMapping.git --recursive
+RUN git config --global http.version HTTP/1.1 && \
+git clone https://github.com/MapsHD/HDMapping.git --recursive
 
 WORKDIR /workspace/HDMapping
 

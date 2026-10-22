@@ -659,7 +659,8 @@ not used.
 │   ├── metrics.json
 │   └── evaluation.log
 ├── evaluation_summary.csv
-└── evaluation_summary.md
+├── evaluation_summary.md
+└── evaluation_summary.tex
 ```
 
 - `reference/source.json`: FARO path, SHA-256 and point count for cached conversion.
@@ -677,6 +678,25 @@ not used.
   reports in [algorithms.conf](algorithms.conf) order, not completion order.
   Both reports include voxel size and threshold. Unavailable metrics are blank
   in CSV and `-` in Markdown.
+- `evaluation_summary.tex`: self-contained LaTeX document with an A4 landscape page
+  and 15 mm margins. The standalone wrapper centers the complete table and caption
+  horizontally and vertically, shrinking them together only if needed to fit one
+  page. It uses the standard `geometry`, `adjustbox`, `caption` and `environ`
+  packages. The copy-pasteable table itself is unchanged and needs no extra
+  packages. Compile the document directly, or copy only the section
+  between `% BEGIN COPY-PASTE TABLE` and `% END COPY-PASTE TABLE` into another
+  document. Separate comment guards identify the standalone preamble and footer.
+  The table includes a caption and label, plus every selected algorithm's
+  status and all eight metrics in the same order as CSV/Markdown, with six decimal
+  places and `-` for unavailable values. The caption documents units, voxel size,
+  threshold and metric definitions. Paths, point counts and error messages remain
+  in CSV/Markdown and are not referenced in the LaTeX document. The table is wide;
+  adjust the font size or page orientation when copying it into your document.
+  Change the label when including multiple evaluation tables.
+
+All three summaries are written atomically per file by the same report-generation
+paths, including failure/interruption reporting. Use `--merge-only` to generate
+them from saved results without rerunning cloud evaluation.
 
 Workers write only their own per-algorithm reports. Existing combined reports
 remain from the previous run until the final merge replaces them.

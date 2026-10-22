@@ -30,7 +30,7 @@ usage() {
     echo "Set HDMAPPING_BUILD_JOBS to limit compilation parallelism (default: 2)."
     echo "Use --jobs N for simultaneous algorithm evaluations (default: 1; positive integer)."
     echo "Shows per-worker stage bars in a terminal, or timestamped worker progress otherwise."
-    echo "Workers save separate reports; combined CSV/Markdown reports are merged after all finish."
+    echo "Workers save separate reports; combined CSV/Markdown/LaTeX reports are merged after all finish."
     echo "Only one run can write to an evaluation output directory at a time."
     echo "Runs the upstream evaluator CLI with its default NN cache and RMSE behavior."
     echo "Use --merge-only to rebuild summaries from saved results without evaluating clouds."

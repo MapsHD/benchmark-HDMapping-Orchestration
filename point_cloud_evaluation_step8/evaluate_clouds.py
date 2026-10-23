@@ -730,6 +730,75 @@ def read_saved_result(
     return {"status": "evaluated", "message": "", **counts, **metrics}
 
 
+def latex_cell(value: object) -> str:
+    if value is None:
+        return "-"
+    text = f"{value:.6f}" if isinstance(value, float) else str(value)
+    escapes = {
+        "\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$",
+        "#": r"\#", "_": r"\_", "{": r"\{", "}": r"\}",
+        "~": r"\textasciitilde{}", "^": r"\textasciicircum{}",
+    }
+    return "".join(escapes.get(character, character) for character in " ".join(text.split()))
+
+
+def write_latex_report(output: Path, records: list[dict[str, object]]) -> None:
+    columns = ("algorithm_id", "status", *METRIC_FIELDS)
+    headers = (
+        "Algorithm", "Status",
+        r"\shortstack{Chamfer\\(m)}",
+        r"\shortstack{CD $A \to F$\\(m)}",
+        r"\shortstack{CD $F \to A$\\(m)}",
+        r"\shortstack{Hausdorff\\(m)}",
+        "Precision", "Recall", "F-score",
+        r"\shortstack{RMSE\\(m)}",
+    )
+    settings = dict.fromkeys(
+        f"{latex_cell(record.get('voxel_size_m'))} / {latex_cell(record.get('threshold_m'))}"
+        for record in records
+    )
+    with atomic_output(output / "evaluation_summary.tex") as handle:
+        handle.write("% BEGIN DOCUMENT PREAMBLE (standalone only)\n")
+        handle.write("\\documentclass{article}\n")
+        handle.write("\\usepackage[a4paper,landscape,margin=15mm]{geometry}\n")
+        handle.write("\\usepackage{adjustbox,caption,environ}\n")
+        handle.write("\\RenewEnviron{table}[1][]{%\n")
+        handle.write("  \\noindent\\begin{adjustbox}{%\n")
+        handle.write("    max totalsize={\\textwidth}{\\dimexpr\\textheight-2\\baselineskip\\relax},center}%\n")
+        handle.write("    \\begin{minipage}{\\textwidth}\n")
+        handle.write("      \\captionsetup{type=table}\n")
+        handle.write("      \\centering\\BODY\n")
+        handle.write("    \\end{minipage}%\n")
+        handle.write("  \\end{adjustbox}\\par\n")
+        handle.write("}\n")
+        handle.write("\\pagestyle{empty}\n\\begin{document}\n")
+        handle.write("\\vspace*{\\fill}\n")
+        handle.write("% END DOCUMENT PREAMBLE\n\n")
+        handle.write("% BEGIN COPY-PASTE TABLE\n")
+        handle.write("\\begin{table}[htbp]\n\\centering\n\\small\n")
+        handle.write("\\setlength{\\tabcolsep}{3pt}\n")
+        handle.write("\\begin{tabular}{llrrrrrrrr}\n\\hline\n")
+        handle.write(" & ".join(headers) + r" \\" + "\n\\hline\n")
+        for record in records:
+            handle.write(" & ".join(latex_cell(record.get(column)) for column in columns) + r" \\" + "\n")
+        handle.write("\\hline\n\\end{tabular}\n")
+        handle.write("\\caption{Step 8 point-cloud evaluation against FARO. "
+                     "Distances are in meters; precision, recall and F-score are in $[0,1]$. "
+                     "$A$ denotes the algorithm cloud and $F$ the FARO reference; CD denotes Chamfer distance. ")
+        if settings:
+            handle.write("Settings (voxel size / threshold, m): " + "; ".join(settings) + ". ")
+        handle.write("A zero voxel size disables downsampling. "
+                     "Precision/recall uses a strict less-than threshold. "
+                     "RMSE uses reference-to-algorithm nearest neighbors for unequal point counts, "
+                     "or row correspondence for equal counts. "
+                     "Unavailable metrics are shown as \\texttt{-}.}\n")
+        handle.write("\\label{tab:step8-point-cloud-evaluation}\n\\end{table}\n")
+        handle.write("% END COPY-PASTE TABLE\n\n")
+        handle.write("% BEGIN DOCUMENT FOOTER (standalone only)\n")
+        handle.write("\\vspace*{\\fill}\n")
+        handle.write("\\end{document}\n% END DOCUMENT FOOTER\n")
+
+
 def write_reports(output: Path, records: list[dict[str, object]]) -> None:
     with atomic_output(output / "evaluation_summary.csv", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=SUMMARY_FIELDS)
@@ -760,6 +829,7 @@ def write_reports(output: Path, records: list[dict[str, object]]) -> None:
                     text = str(value).replace("|", "\\|").replace("\n", " ")
                 values.append(text)
             handle.write("| " + " | ".join(values) + " |\n")
+    write_latex_report(output, records)
 
 
 def run_workers(
@@ -1005,6 +1075,8 @@ def run_locked(
     unsuccessful = len(records) - evaluated - skipped
     print(f"Step 8 summary: selected={len(records)} evaluated={evaluated} skipped={skipped} unavailable_or_failed={unsuccessful}")
     print(f"Evaluation report: {output / 'evaluation_summary.csv'}")
+    print(f"Markdown report: {output / 'evaluation_summary.md'}")
+    print(f"LaTeX report: {output / 'evaluation_summary.tex'}")
     progress(f"Step 8 finished in {monotonic() - run_started:.1f}s")
     if evaluated == 0:
         print("ERROR: Step 8 did not evaluate any registered algorithm successfully", file=sys.stderr)

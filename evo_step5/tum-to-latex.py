@@ -268,13 +268,13 @@ if __name__ == "__main__":
     df_to_latex_table(
         df=df_ape,
         filename="table_ape.tex",
-        caption="Quantitative evaluation (Absolute Pose Error \\cite{grupp2017evo}) of algorithms on bunker dataset. '-' corresponds to results we could not reach. First three rows: our method and ablation study.",
+        caption="Quantitative evaluation (Absolute Pose Error \\cite{grupp2017evo}) of algorithms on bunker dataset.",
         table_label="table3"
     )
     df_to_latex_table(
         df=df_rpe,
         filename="table_rpe.tex",
-        caption="Quantitative evaluation (Relative Pose Error\\cite{grupp2017evo}) of algorithms on bunker dataset. '-' corresponds to results we could not reach. First three rows: our method and ablation study.",
+        caption="Quantitative evaluation (Relative Pose Error\\cite{grupp2017evo}) of algorithms on bunker dataset.",
         table_label="table3"
     )
 

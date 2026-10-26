@@ -132,16 +132,19 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
         "-a",
         "--ref", ground_truth,
         "--plot_mode", "xy",
-        "-p",
-        # Saved, not shown: an interactive window would block the unattended
-        # pipeline until someone closes it.
+        # Saved, not shown (no -p): evo shows plots with the backend of its own
+        # settings file (TkAgg by default), which opens a window that blocks the
+        # unattended pipeline until someone closes it. --save_plot alone writes
+        # the figures without showing them.
         "--save_plot", "trajectories_xy.png",
+        # Overwrites the plots of an earlier run instead of asking on a closed stdin
+        # (evo would abort the plot).
+        "--no_warnings",
     ]
 
     env = os.environ.copy()
     env["HOME"] = "/data"
     env["XDG_CONFIG_HOME"] = "/data/.config"
-    env["MPLBACKEND"] = "Agg"
 
     result = subprocess.run(
         cmd,

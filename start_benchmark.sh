@@ -9,7 +9,8 @@ usage() {
     echo "Step 1 downloads it (if needed) and converts it to the canonical bag; see README, 'Oxford Spires'."
     echo "Environment: OXFORD_SPIRES_SEQUENCE (default 2024-03-12-keble-college-02),"
     echo "  BENCHMARK_DATA_DIR (default ~/hdmapping-benchmark/data-oxford-spires),"
-    echo "  OXFORD_SPIRES_DOWNLOAD_DIR (default <data dir>/download), STEP8_TIMEOUT (default 900 s)."
+    echo "  OXFORD_SPIRES_DOWNLOAD_DIR (default <data dir>/download), STEP8_TIMEOUT (default 900 s),"
+    echo "  ALGO_BRANCH (algorithm repos' branch, default hdmapping-benchmark-canonical)."
     echo "Optionally pass algorithm ids (the 'id' column of algorithms.conf) to"
     echo "clone, build, run and evaluate only those, e.g.:"
     echo "  $0 sr-lio r-voxelmap pv-lio rko-lio pin-slam"
@@ -131,7 +132,9 @@ sleep 5
 echo "=== Step 2: clone_github_repositories_step2 ==="
 cd "$REPO_DIR/clone_github_repositories_step2"
 chmod +x *.sh
-./clone_github_repositories_step2.sh Oxford-Spires
+# Algorithm repos: one canonical-bag branch per algorithm, the same for every
+# dataset converted to the canonical bag.
+./clone_github_repositories_step2.sh "${ALGO_BRANCH:-hdmapping-benchmark-canonical}"
 
 sleep 5
 

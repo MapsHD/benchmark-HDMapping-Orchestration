@@ -4,8 +4,8 @@
 
 This branch benchmarks the [Oxford Spires dataset](https://huggingface.co/datasets/ori-drs/oxford_spires_dataset)
 (Hesai QT64 lidar, Alphasense IMU, handheld). The algorithms read a **canonical bag** instead of the Livox
-bags of the other branches. Each algorithm gets an `Oxford-Spires` branch in its own repo with a config for
-that bag; until it has one, the benchmark skips it. The rest of this README describes the pipeline in
+bags of the other branches. Each algorithm gets a `hdmapping-benchmark-canonical` branch in its own repo with a
+config for that bag; until it has one, the benchmark skips it. The rest of this README describes the pipeline in
 general, and this section only covers what is different here.
 
 ## Run
@@ -81,17 +81,18 @@ Every argument is optional: `[sequence] [download_dir] [data_dir] [name]`. The d
 
 Do it one algorithm at a time:
 
-1. In `benchmark-<algo>-to-HDMapping`, create a branch `Oxford-Spires`.
+1. In `benchmark-<algo>-to-HDMapping`, create a branch `hdmapping-benchmark-canonical`. It is the same for every
+   dataset converted to the canonical bag; step 2 checks it out (`ALGO_BRANCH` overrides the name).
 2. Point the run script at `/lidar/pointcloud` and `/lidar/imu`.
 3. Start from the algorithm's own spinning-lidar (Velodyne) config, and change only the sensor description:
    rings, time unit, ranges, field of view and IMU noise.
 4. In `algorithms.conf` on this branch, set the algorithm's input to `canonical` (ROS1 bag) or
    `canonical-ros2` (ROS2 bag). HDMapping-LIO's input, `hdmapping` (the session), is already produced
-   here, so it runs from its repo's current checkout until that repo has an `Oxford-Spires` branch.
+   here, so it runs from its repo's current checkout until that repo has a `hdmapping-benchmark-canonical` branch.
 5. Run `./start_benchmark.sh <algo>`.
 
-Step 2 skips repos without an `Oxford-Spires` branch, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`).
+Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp.
 
 ## Other differences from the Bunker branch
 

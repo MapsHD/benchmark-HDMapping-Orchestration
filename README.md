@@ -92,7 +92,18 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio.
+
+## Known issues
+
+- **IMU lever arm:** see "Canonical bag". The accelerations are not transferred to the lidar origin.
+- **Faster-LIO is worse on the canonical bag than on the Livox route** (keble-college-02: APE 0.103 m and map
+  F-score 0.367, against 0.064 m and 0.552). Its canonical config is its upstream `velodyne.yaml` with only the
+  sensor description changed, and everything else in that file was tuned for NCLT. The likely cause is
+  `extrinsic_est_en: true` (online IMU–lidar estimation), which is off in its `avia.yaml` and in FAST-LIO's
+  `velodyne.yaml`. It is left as is by the sensor-description-only rule. The alternative, a written rule to turn
+  off online extrinsic estimation for every algorithm when the bag's extrinsic is exact (as it is here), was
+  considered and not taken.
 
 ## Other differences from the Bunker branch
 

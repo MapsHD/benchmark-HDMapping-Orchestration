@@ -18,7 +18,7 @@ docker run --rm \
     --user 1000:1000 \
     -e DISPLAY=$DISPLAY \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
-    -v ~/hdmapping-benchmark/data/tum:/data \
+    -v "${BENCHMARK_DATA_DIR:-$HOME/hdmapping-benchmark/data}/tum":/data \
     -w /data \
     "$IMAGE_NAME" \
     python3 /app/tum-to-latex.py

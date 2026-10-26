@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMAGE_NAME="hdmapping_tum"
-DATA_DIR="$HOME/hdmapping-benchmark/data"
+DATA_DIR="${BENCHMARK_DATA_DIR:-$HOME/hdmapping-benchmark/data}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 source "$SCRIPT_DIR/../algos_lib.sh"
@@ -42,15 +42,21 @@ for alg in $(algo_ids); do
     fi
 done
 
-mkdir -p "$HOME/hdmapping-benchmark/data/tum"
-cp ground_truth.tum "$HOME/hdmapping-benchmark/data/tum/"
+mkdir -p "$DATA_DIR/tum"
+# Oxford-Spires: prepare_data_step1/oxford_spires/prepare.sh writes the sequence's
+# ground truth (lidar frame) into the data dir; it wins over the file in this folder.
+if [ -f "$DATA_DIR/ground_truth.tum" ]; then
+    cp "$DATA_DIR/ground_truth.tum" "$DATA_DIR/tum/ground_truth.tum"
+else
+    cp ground_truth.tum "$DATA_DIR/tum/"
+fi
 
 docker run --rm -it \
     --user 1000:1000 \
     -e ONLY_ALGOS="${ONLY_ALGOS:-}" \
     -v "$SCRIPT_DIR/save_to_tum.py":/workspace/save_to_tum.py:ro \
     -v "$ALGOS_CONF":/workspace/algorithms.conf:ro \
-    -v ~/hdmapping-benchmark/data:/data \
+    -v "$DATA_DIR":/data \
     "$IMAGE_NAME" bash -c '
 cd /workspace/HDMapping
 

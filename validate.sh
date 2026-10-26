@@ -25,8 +25,11 @@ if [[ $# -gt 0 ]]; then
 fi
 
 WORKSPACE="$HOME/hdmapping-benchmark"
-REPO_DIR="$WORKSPACE/benchmark-HDMapping-Orchestration"
-DATA_DIR="$WORKSPACE/data"
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Oxford-Spires: the data dir and sequence come from start_benchmark.sh.
+DATA_DIR="${BENCHMARK_DATA_DIR:-$WORKSPACE/data-oxford-spires}"
+SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
+NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
 SESSION="$DATA_DIR/HDMappingGroundTruth/lio_result_0/session.mjs"
 PASSED=0
 FAILED=0
@@ -72,7 +75,10 @@ for path in "$WORKSPACE" "$DATA_DIR"; do
         fail "Workspace directory is not writable: $path"
     fi
 done
-check_file "$DATA_DIR/reg-1.bag"
+check_file "$DATA_DIR/$NAME.bag"
+check_file "$DATA_DIR/$NAME-ros2/metadata.yaml"
+check_file "$DATA_DIR/ground_truth.tum"
+check_directory "$DATA_DIR/$NAME-hdmapping"
 check_file "$SESSION"
 check_file "$DATA_DIR/TLS-FARO-Focus/map_gt_0.01.laz"
 
@@ -167,13 +173,12 @@ elif ! docker info >/dev/null; then
 else
     pass "Docker daemon accessible"
     for image in \
-        livox_bag_aggregate_noetic:latest \
-        mandeye-ws_noetic:latest \
-        mandeye-ws_humble:latest; do
+        hdmapping-tools:latest \
+        oxford-spires-tools:latest; do
         if docker image inspect "$image" >/dev/null; then
             pass "Prerequisite Docker image present: $image"
         else
-            fail "Missing or inaccessible Docker image: $image; build it using the README prerequisite repositories"
+            fail "Missing or inaccessible Docker image: $image; build it with prepare_data_step1/oxford_spires/build_images.sh"
         fi
     done
 fi

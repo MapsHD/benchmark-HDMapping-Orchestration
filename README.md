@@ -1,5 +1,102 @@
 # benchmark-HDMapping-Orchestration
 
+# Oxford Spires (this branch)
+
+This branch benchmarks the [Oxford Spires dataset](https://huggingface.co/datasets/ori-drs/oxford_spires_dataset)
+(Hesai QT64 lidar, Alphasense IMU, handheld). The algorithms read a **canonical bag** instead of the Livox
+bags of the other branches. Each algorithm gets an `Oxford-Spires` branch in its own repo with a config for
+that bag; until it has one, the benchmark skips it. The rest of this README describes the pipeline in
+general, and this section only covers what is different here.
+
+## Run
+
+```bash
+./start_benchmark.sh                                   # 2024-03-12-keble-college-02
+OXFORD_SPIRES_SEQUENCE=<core sequence> ./start_benchmark.sh fast-lio   # one sequence, one algorithm
+```
+
+| Variable | Default |
+|---|---|
+| `OXFORD_SPIRES_SEQUENCE` | `2024-03-12-keble-college-02` (a core sequence: only those have `gt-tum.txt`) |
+| `BENCHMARK_DATA_DIR` | `~/hdmapping-benchmark/data-oxford-spires` |
+| `OXFORD_SPIRES_DOWNLOAD_DIR` | `<data dir>/download` (about 25 GB per sequence with its TLS map) |
+| `STEP8_TIMEOUT` | `900` s per map; a diverged map's evaluation can take hours |
+
+Step 1 does everything below on its own; each part can also run by hand.
+
+## Step 1: dataset → canonical bag
+
+The scripts are in `prepare_data_step1/oxford_spires/`. They use two images, which `build_images.sh` builds:
+
+- `hdmapping-tools`: HDMapping's ROS-free converters `bag_to_laz`, `laz_to_bag`, `laz_to_mcap` and
+  `mcap_to_laz`, from HDMapping branch `canonical-bag`. Set `HDMAPPING_SRC=<checkout>` to build a local
+  checkout instead.
+- `oxford-spires-tools`: `oxford_spires.py` and `rosbags-convert`.
+
+```bash
+prepare_data_step1/oxford_spires/build_images.sh
+prepare_data_step1/oxford_spires/download.sh 2024-03-12-keble-college-02 ~/oxford-download
+prepare_data_step1/oxford_spires/prepare.sh  2024-03-12-keble-college-02 ~/oxford-download ~/hdmapping-benchmark/data-oxford-spires
+```
+
+`prepare.sh` writes, for `<name>` = the sequence without its date:
+
+| Output | How |
+|---|---|
+| `<name>-hdmapping/` | `bag_to_laz` of the raw bag(s). The IMU is rotated into the lidar frame (from `cam-lidar-imu.yaml`) and converted to g. The ring is kept as the LAS extra-bytes attribute `ring`. This is the input of HDMapping-LIO. |
+| `<name>.bag` | `laz_to_bag --lidar-type canonical --msg_hz 10`: the canonical ROS1 bag |
+| `<name>-ros2/` | the same, as a ROS2 sqlite3 bag (`rosbags-convert`; the Humble images have no MCAP plugin) |
+| `<name>.mcap` | the same as MCAP, only with `WRITE_MCAP=1` |
+| `ground_truth.tum` | `gt-tum.txt` (base frame, ICP to TLS) moved to the lidar frame; step 4 uses it |
+| `HDMappingGroundTruth/lio_result_0/` | ground-truth session for steps 4, 7 and 8: raw scans deskewed with the ground truth, in 5 s chunks |
+| `TLS-FARO-Focus/map_gt_0.01.laz` | step 8 reference: the site's TLS map cropped to the walk plus 20 m |
+
+## Canonical bag
+
+| Topic | Type | Content |
+|---|---|---|
+| `/lidar/pointcloud` | `sensor_msgs/PointCloud2` | One message per 100 ms, `frame_id: lidar`. Fields: `x y z intensity` (float32), `ring` (uint16, the laser 0–63), `time` (float32 s), `t` (uint32 ns). |
+| `/lidar/imu` | `sensor_msgs/Imu` | `frame_id: lidar`. Rotated into the lidar frame, rad/s and m/s². |
+
+- `time` and `t` are relative to `header.stamp`, which is the first point.
+- Points are sorted by time, ties by ring.
+- The layout matches the Velodyne point type of FAST-LIO (`lidar_type: 2`, `timestamp_unit: 0`), LIO-SAM
+  (`sensor: velodyne`) and their derivatives. PCL matches fields by name *and* type, so use the Velodyne
+  mode, not an Ouster one (`ring` as uint8).
+- The IMU's lever arm, about 8.6 cm, is not applied: rotation and translation between lidar and IMU are
+  identity in the bag.
+- Hesai QT64 values for configs:
+  - 64 rings, vertical field of view −52.5° to +52.1°, unevenly spaced;
+  - up to about 1200 points per ring per sweep;
+  - range 0.13–60 m;
+  - IMU noise in `calibration/imu.yaml`.
+
+## Adding an algorithm
+
+Do it one algorithm at a time:
+
+1. In `benchmark-<algo>-to-HDMapping`, create a branch `Oxford-Spires`.
+2. Point the run script at `/lidar/pointcloud` and `/lidar/imu`.
+3. Start from the algorithm's own spinning-lidar (Velodyne) config, and change only the sensor description:
+   rings, time unit, ranges, field of view and IMU noise.
+4. In `algorithms.conf` on this branch, set the algorithm's input to `canonical` (ROS1 bag) or
+   `canonical-ros2` (ROS2 bag). HDMapping-LIO's input, `hdmapping` (the session), is already produced
+   here, so it runs from its repo's current checkout until that repo has an `Oxford-Spires` branch.
+5. Run `./start_benchmark.sh <algo>`.
+
+Step 2 skips repos without an `Oxford-Spires` branch, and step 3 skips algorithms whose input is still a
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`).
+
+## Other differences from the Bunker branch
+
+- **Data dir:** steps 4–6 and `validate.sh` read it from `BENCHMARK_DATA_DIR`.
+- **Ground truth:** step 4 takes `ground_truth.tum` from the data dir when it is there.
+- **Step 5:** saves the trajectory plot to `tum/trajectories_xy.png` instead of opening a window.
+- **Step 8:** `--timeout SECONDS` stops a map's evaluation and records it as failed.
+- **Step 4 memory:** it loads every selected session at once. With all 41 algorithms on Oxford that needed
+  more than 60 GB of RAM. Run it in batches with `ONLY_ALGOS`, and include in every batch the session that
+  starts latest, so all batches align at the same instant.
+
 # 0. Dataset and workspace setup
 
 ## Download the dataset

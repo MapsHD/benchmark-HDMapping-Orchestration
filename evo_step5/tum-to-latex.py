@@ -133,11 +133,15 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
         "--ref", ground_truth,
         "--plot_mode", "xy",
         "-p",
+        # Saved, not shown: an interactive window would block the unattended
+        # pipeline until someone closes it.
+        "--save_plot", "trajectories_xy.png",
     ]
 
     env = os.environ.copy()
     env["HOME"] = "/data"
     env["XDG_CONFIG_HOME"] = "/data/.config"
+    env["MPLBACKEND"] = "Agg"
 
     result = subprocess.run(
         cmd,

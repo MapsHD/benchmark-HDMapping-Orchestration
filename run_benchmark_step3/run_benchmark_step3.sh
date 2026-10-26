@@ -35,14 +35,19 @@ CLONE_DIR="$HOME/hdmapping-benchmark"
 check_only_algos
 
 # Resolve the "input" column of algorithms.conf to an actual path.
+#
+# Oxford-Spires branch: the inputs are the canonical bag (/lidar/pointcloud +
+# /lidar/imu, see README "Oxford Spires") and the HDMapping session. The Livox
+# inputs of the other branches (raw, pc, ros2, ros2-lidar) are not produced
+# here, so an algorithm still listed with one is skipped until its repo has an
+# Oxford-Spires branch reading the canonical bag and its row says canonical or
+# canonical-ros2.
 resolve_input() {
   case "$1" in
-    raw)        echo "$ROS1_BAG" ;;
-    pc)         echo "${ROS1_BAG}-pc.bag" ;;
-    ros2)       echo "$ROS2_BAG_DIR" ;;
-    ros2-lidar) echo "${ROS2_BAG_DIR}-lidar" ;;
-    hdmapping)  echo "$(dirname "$ROS1_BAG")/$(basename "$ROS1_BAG" .bag)-hdmapping" ;;
-    *)          echo "" ;;
+    canonical)      echo "$ROS1_BAG" ;;
+    canonical-ros2) echo "$ROS2_BAG_DIR" ;;
+    hdmapping)      echo "$(dirname "$ROS1_BAG")/$(basename "$ROS1_BAG" .bag)-hdmapping" ;;
+    *)              echo "" ;;
   esac
 }
 
@@ -69,7 +74,7 @@ for category in ROS1 ROS2 NON_ROS; do
 
     INPUT="$(resolve_input "$input")"
     if [[ -z "$INPUT" ]]; then
-        echo "=== Skipping $id: unknown input kind '$input' in algorithms.conf ==="
+        echo "=== Skipping $id: input '$input' is not produced on this branch (no canonical-bag config yet) ==="
         continue
     fi
 

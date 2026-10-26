@@ -1,0 +1,11 @@
+# oxford_spires.py (calibration, ground truth in the lidar frame, the HDMapping
+# ground-truth session, the step 8 TLS reference) and rosbags-convert (canonical
+# ROS1 bag -> ROS2 sqlite3 bag, as mandeye-convert.sh ros1-to-ros2 does).
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir numpy laspy[lazrs] pyyaml rosbags
+
+COPY oxford_spires.py /opt/oxford_spires/oxford_spires.py
+
+WORKDIR /data
+ENTRYPOINT ["python3", "/opt/oxford_spires/oxford_spires.py"]

@@ -18,7 +18,7 @@ import struct
 import subprocess
 import sys
 import tempfile
-from threading import Event, Lock
+from threading import Event, Lock, Timer
 from time import monotonic
 from typing import Iterator, TextIO, TypedDict
 
@@ -94,6 +94,8 @@ class RunControl:
         self.cancelled = Event()
         self.lock = Lock()
         self.processes: dict[int, subprocess.Popen[str]] = {}
+        # Seconds one upstream evaluation may run (0 = no limit). Chamfer on a diverged map can take hours.
+        self.upstream_timeout_s = 0.0
 
     def check_cancelled(self) -> None:
         if self.cancelled.is_set():
@@ -519,6 +521,24 @@ def validate_evaluated_count(value: object, expected: int, voxel_size: float, la
     return value
 
 
+def read_upstream_output(process: subprocess.Popen[str], log: TextIO, worker: Worker, counts: list[int]) -> int:
+    for line in process.stdout:
+        worker.control.check_cancelled()
+        log.write(line)
+        log.flush()
+        message = line.strip()
+        if message:
+            stage = next((stage for marker, stage in UPSTREAM_PHASES.items() if message.startswith(marker)), 0)
+            worker.emit(message, stage)
+        # The CLI JSON contains metrics only; point counts are printed once per input.
+        match = re.fullmatch(r"  Points: ([0-9]+)\n?", line)
+        if match:
+            counts.append(int(match[1]))
+    returncode = process.wait()
+    worker.control.check_cancelled()
+    return returncode
+
+
 def run_upstream_evaluation(
     algo: str, registered_ply: Path, reference_ply: Path, folder: Path,
     algorithm_input_points: int, reference_input_points: int, log: TextIO, worker: Worker, *,
@@ -533,24 +553,27 @@ def run_upstream_evaluation(
     if voxel_size > 0:
         command.extend(["--voxel-size", str(voxel_size)])
     counts = []
+    timeout_s = worker.control.upstream_timeout_s
+    timed_out = Event()
+
+    def expire(process: subprocess.Popen[str]) -> None:
+        timed_out.set()
+        RunControl.signal_process(process, signal.SIGTERM)
+
     with timed_phase(f"{algo}: upstream evaluation (shared NN cache enabled by default)", log, worker=worker):
         with worker.control.process(command, subprocess.PIPE) as process:
             if process.stdout is None:
                 raise RuntimeError("upstream evaluator output pipe was not created")
-            for line in process.stdout:
-                worker.control.check_cancelled()
-                log.write(line)
-                log.flush()
-                message = line.strip()
-                if message:
-                    stage = next((stage for marker, stage in UPSTREAM_PHASES.items() if message.startswith(marker)), 0)
-                    worker.emit(message, stage)
-                # The CLI JSON contains metrics only; point counts are printed once per input.
-                match = re.fullmatch(r"  Points: ([0-9]+)\n?", line)
-                if match:
-                    counts.append(int(match[1]))
-            returncode = process.wait()
-            worker.control.check_cancelled()
+            timer = Timer(timeout_s, expire, (process,)) if timeout_s > 0 else None
+            if timer is not None:
+                timer.start()
+            try:
+                returncode = read_upstream_output(process, log, worker, counts)
+            finally:
+                if timer is not None:
+                    timer.cancel()
+        if timed_out.is_set():
+            raise RuntimeError(f"upstream evaluation exceeded the {timeout_s:g} s limit (map likely diverged); see {log.name}")
         if returncode != 0:
             raise RuntimeError(f"upstream evaluator exited with code {returncode}; see {log.name}")
         if len(counts) != 2:
@@ -945,6 +968,10 @@ def main() -> int:
     )
     parser.add_argument("--merge-only", action="store_true", help="rebuild summaries without replacing per-map results")
     parser.add_argument(
+        "--timeout", type=nonnegative_distance, default=0.0,
+        help="seconds one map's upstream evaluation may run, then it is recorded as failed (default: 0 = no limit)",
+    )
+    parser.add_argument(
         "--no-force", dest="force", action="store_false",
         help="preserve existing evaluation folders instead of replacing them",
     )
@@ -962,6 +989,7 @@ def main() -> int:
     else:
         output.mkdir(parents=True, exist_ok=True)
     control = RunControl()
+    control.upstream_timeout_s = args.timeout
     with output_lock(output):
         try:
             return run_locked(args, data, registration, output, control)

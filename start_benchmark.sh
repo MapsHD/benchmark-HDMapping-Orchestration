@@ -5,8 +5,11 @@ set -e
 usage() {
     echo "Usage: $0 [--bucket-size METERS] [--voxel-size METERS] [--threshold METERS] [--jobs N] [--no-force] [algo ...]"
     echo
-    echo "Runs the whole benchmark pipeline (steps 1-8)."
-    echo "Checks workspace setup, dataset and prerequisite Docker images first."
+    echo "Runs the whole benchmark pipeline (steps 1-8) on one Oxford Spires sequence."
+    echo "Step 1 downloads it (if needed) and converts it to the canonical bag; see README, 'Oxford Spires'."
+    echo "Environment: OXFORD_SPIRES_SEQUENCE (default 2024-03-12-keble-college-02),"
+    echo "  BENCHMARK_DATA_DIR (default ~/hdmapping-benchmark/data-oxford-spires),"
+    echo "  OXFORD_SPIRES_DOWNLOAD_DIR (default <data dir>/download), STEP8_TIMEOUT (default 900 s)."
     echo "Optionally pass algorithm ids (the 'id' column of algorithms.conf) to"
     echo "clone, build, run and evaluate only those, e.g.:"
     echo "  $0 sr-lio r-voxelmap pv-lio rko-lio pin-slam"
@@ -70,8 +73,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 
-DATA_DIR=~/hdmapping-benchmark/data
-REPO_DIR=~/hdmapping-benchmark/benchmark-HDMapping-Orchestration
+REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
+NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
+DATA_DIR="${BENCHMARK_DATA_DIR:-$HOME/hdmapping-benchmark/data-oxford-spires}"
+DOWNLOAD_DIR="${OXFORD_SPIRES_DOWNLOAD_DIR:-$DATA_DIR/download}"
+STEP8_TIMEOUT="${STEP8_TIMEOUT:-900}"
+mkdir -p "$DATA_DIR"
+# Steps 4-6 and validate.sh read the data dir from the environment.
+export BENCHMARK_DATA_DIR="$DATA_DIR" OXFORD_SPIRES_SEQUENCE="$SEQUENCE"
 
 if ! command -v python3 >/dev/null 2>&1; then
     echo "ERROR: Python 3 is required to validate Step 7 and Step 8 settings" >&2
@@ -101,81 +111,30 @@ if [[ ${#ALGORITHMS[@]} -gt 0 ]]; then
     echo "=== Restricting the benchmark to: $ONLY_ALGOS ==="
 fi
 
-bash "$REPO_DIR/validate.sh"
-
 cd "$DATA_DIR"
 
-echo "=== Step 1: prepare_data_step1 ==="
-
-if [ -f "$DATA_DIR/reg-1.bag-pc.bag" ] && \
-   [ -d "$DATA_DIR/reg-1-ros2" ] && \
-   [ -d "$DATA_DIR/reg-1-ros2-lidar" ]; then
-
+echo "=== Step 1: prepare_data_step1 (Oxford Spires $SEQUENCE -> canonical bag) ==="
+OXFORD="$REPO_DIR/prepare_data_step1/oxford_spires"
+if [ -f "$DATA_DIR/$NAME.bag" ] && [ -d "$DATA_DIR/$NAME-ros2" ] && [ -d "$DATA_DIR/$NAME-hdmapping" ] && \
+   [ -f "$DATA_DIR/ground_truth.tum" ] && [ -f "$DATA_DIR/HDMappingGroundTruth/lio_result_0/session.mjs" ] && \
+   [ -f "$DATA_DIR/TLS-FARO-Focus/map_gt_0.01.laz" ]; then
     echo "Step 1 outputs exist. Skipping."
-
 else
-
-    echo "Step 1 incomplete. Missing:"
-
-    if [ ! -f "$DATA_DIR/reg-1.bag-pc.bag" ]; then
-        echo " - reg-1.bag-pc.bag"
+    if ! docker image inspect hdmapping-tools >/dev/null 2>&1 || ! docker image inspect oxford-spires-tools >/dev/null 2>&1; then
+        bash "$OXFORD/build_images.sh"
     fi
-
-    if [ ! -d "$DATA_DIR/reg-1-ros2" ]; then
-        echo " - reg-1-ros2"
-    fi
-
-    if [ ! -d "$DATA_DIR/reg-1-ros2-lidar" ]; then
-        echo " - reg-1-ros2-lidar"
-    fi
-
-    echo "Removing old partial outputs..."
-
-    rm -rf \
-        "$DATA_DIR/reg-1.bag-pc.bag" \
-        "$DATA_DIR/reg-1-ros2" \
-        "$DATA_DIR/reg-1-ros2-lidar"
-
-    echo "Starting Step 1 conversion..."
-
-    cd "$REPO_DIR/prepare_data_step1"
-    chmod +x *.sh
-
-    ./prepare_data_step1.sh \
-        "$DATA_DIR/reg-1.bag" \
-        "$DATA_DIR"
-
+    bash "$OXFORD/download.sh" "$SEQUENCE" "$DOWNLOAD_DIR"
+    bash "$OXFORD/prepare.sh" "$SEQUENCE" "$DOWNLOAD_DIR" "$DATA_DIR" "$NAME"
 fi
 
-# HDMapping (Mandeye) format data, the 'hdmapping' input of algorithms.conf.
-# Checked on its own, so a setup that already has the outputs above only adds
-# this folder, and only when a selected algorithm uses it.
-source "$REPO_DIR/algos_lib.sh"
-needs_input() {
-    for category in ROS1 ROS2 NON_ROS; do algo_rows "$category"; done |
-        awk -F'\t' -v kind="$1" '$4 == kind { found = 1 } END { exit !found }'
-}
-if needs_input hdmapping; then
-    if [ -d "$DATA_DIR/reg-1-hdmapping" ]; then
-        echo "HDMapping-format data exists. Skipping."
-    else
-        echo "Converting reg-1.bag to HDMapping (Mandeye) format..."
-        chmod +x "$REPO_DIR/prepare_data_step1/mandeye-convert.sh"
-        rm -rf "$DATA_DIR/reg-1-hdmapping.partial"
-        "$REPO_DIR/prepare_data_step1/mandeye-convert.sh" \
-            "$DATA_DIR/reg-1.bag" \
-            "$DATA_DIR/reg-1-hdmapping.partial" \
-            ros1-to-hdmapping
-        mv "$DATA_DIR/reg-1-hdmapping.partial" "$DATA_DIR/reg-1-hdmapping"
-    fi
-fi
+bash "$REPO_DIR/validate.sh"
 
 sleep 5
 
 echo "=== Step 2: clone_github_repositories_step2 ==="
 cd "$REPO_DIR/clone_github_repositories_step2"
 chmod +x *.sh
-./clone_github_repositories_step2.sh Bunker-DVI-Dataset-reg-1
+./clone_github_repositories_step2.sh Oxford-Spires
 
 sleep 5
 
@@ -183,8 +142,8 @@ echo "=== Step 3: run_benchmark_step3 ==="
 cd "$REPO_DIR/run_benchmark_step3"
 chmod +x *.sh
 ./run_benchmark_step3.sh \
-    "$DATA_DIR/reg-1.bag" \
-    "$DATA_DIR/reg-1-ros2" \
+    "$DATA_DIR/$NAME.bag" \
+    "$DATA_DIR/$NAME-ros2" \
     "$DATA_DIR"
 
 echo "=== DONE ==="
@@ -233,6 +192,7 @@ bash "$REPO_DIR/point_cloud_evaluation_step8/run_evaluation_step8.sh" \
     --voxel-size "$VOXEL_SIZE" \
     --threshold "$THRESHOLD" \
     --jobs "$JOBS" \
+    --timeout "$STEP8_TIMEOUT" \
     "${OVERWRITE_ARGS[@]}"
 
 echo "=== DONE ==="

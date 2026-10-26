@@ -37,6 +37,12 @@ fi
 
 check_only_algos
 
+# Repos that have no branch $BRANCH_NAME on GitHub. On the Oxford-Spires branch
+# algorithms get their canonical-bag configs one by one, so a missing branch is
+# expected: the repo is left as it is, its image is not built, and step 3 skips
+# the algorithm (its algorithms.conf input is not a canonical one yet).
+declare -A NO_BRANCH=()
+
 clone_repo() {
   local repo_name="$1"
   local branch_name="$2"
@@ -52,6 +58,12 @@ clone_repo() {
   fi
 
   cd "$dir_name" || return
+  if ! git ls-remote --exit-code --heads origin "$branch_name" >/dev/null 2>&1; then
+    echo "SKIP: $dir_name has no branch '$branch_name' on GitHub (no config for this dataset yet)"
+    NO_BRANCH["$repo_name"]=1
+    cd ..
+    return
+  fi
   echo "Switching $dir_name to branch $branch_name..."
   git fetch
   git checkout "$branch_name"
@@ -73,7 +85,11 @@ for category in ROS1 ROS2 NON_ROS; do
   done 3< <(algo_rows "$category")
 done
 
-echo "=== All repositories have been cloned and switched to branch '$BRANCH_NAME' ==="
+echo "=== Repositories cloned; switched to branch '$BRANCH_NAME' where it exists ==="
+if [ ${#NO_BRANCH[@]} -gt 0 ]; then
+  echo "=== ${#NO_BRANCH[@]} repositories have no branch '$BRANCH_NAME' and are skipped: ==="
+  printf '    %s\n' "${!NO_BRANCH[@]}"
+fi
 
 # A GPU is recommended but not required: e.g. PIN-SLAM uses an NVIDIA GPU when
 # the NVIDIA Container Toolkit is present and falls back to CPU otherwise.
@@ -85,6 +101,7 @@ FAILED_BUILDS=()
 for category in ROS1 ROS2 NON_ROS; do
   while IFS=$'\t' read -r -u 3 repo id output input; do
     [ -n "$repo" ] || continue
+    [ -z "${NO_BRANCH[$repo]:-}" ] || continue
     cd "$CLONE_DIR/$repo" || continue
     # Some repos (e.g. benchmark-HDMapping_LIO-to-HDMapping) ship only a README
     # describing a manual procedure — nothing to build for those.

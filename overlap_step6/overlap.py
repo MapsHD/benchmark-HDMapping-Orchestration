@@ -1,6 +1,8 @@
 import os
 import glob
 
+DATA_DIR = os.environ.get("BENCHMARK_DATA_DIR", "~/hdmapping-benchmark/data")
+
 def tum_info(path):
 
     if not os.path.exists(path):
@@ -27,12 +29,12 @@ def tum_info(path):
 
 
 gt = tum_info(os.path.expanduser(
-    "~/hdmapping-benchmark/data/tum/ground_truth.tum"
+    os.path.join(DATA_DIR, "tum/ground_truth.tum")
 ))
 
 
 lio_files = glob.glob(os.path.expanduser(
-    "~/hdmapping-benchmark/data/tum/output_hdmapping-*_trajectory_tum.txt"
+    os.path.join(DATA_DIR, "tum/output_hdmapping-*_trajectory_tum.txt")
 ))
 
 
@@ -131,7 +133,7 @@ for r in results:
     )
 
 md_file = os.path.expanduser(
-    "~/hdmapping-benchmark/data/tum/overlap_results.md"
+    os.path.join(DATA_DIR, "tum/overlap_results.md")
 )
 
 with open(md_file, "w") as f:
@@ -152,7 +154,7 @@ with open(md_file, "w") as f:
 print(f"Saved: {md_file}")
 
 latex_file = os.path.expanduser(
-    "~/hdmapping-benchmark/data/tum/overlap_results.tex"
+    os.path.join(DATA_DIR, "tum/overlap_results.tex")
 )
 
 caption = "LIO overlap benchmark."

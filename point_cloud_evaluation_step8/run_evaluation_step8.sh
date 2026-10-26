@@ -14,6 +14,7 @@ FORCE=true
 VOXEL_SIZE=0.05
 THRESHOLD=0.05
 JOBS=1
+TIMEOUT=0
 
 usage() {
     echo "Usage: $0 [--data-dir DIRECTORY] [--registration-dir DIRECTORY] [--output-dir DIRECTORY]"
@@ -34,6 +35,7 @@ usage() {
     echo "Only one run can write to an evaluation output directory at a time."
     echo "Runs the upstream evaluator CLI with its default NN cache and RMSE behavior."
     echo "Use --merge-only to rebuild summaries from saved results without evaluating clouds."
+    echo "Use --timeout SECONDS to record a map as failed when its evaluation runs longer (default: 0 = no limit)."
     echo "Selected eligible maps' result folders are permanently replaced by default, except in --merge-only mode."
     echo "Use --no-force to preserve existing evaluation folders."
     echo "Step 7 results marked registered, or validated completed existing registrations, are eligible."
@@ -67,6 +69,14 @@ while [[ $# -gt 0 ]]; do
                 --voxel-size) VOXEL_SIZE="$2" ;;
                 --threshold) THRESHOLD="$2" ;;
             esac
+            shift 2
+            ;;
+        --timeout)
+            if [[ $# -lt 2 || ! "$2" =~ ^[0-9]+$ ]]; then
+                echo "ERROR: --timeout requires a whole number of seconds" >&2
+                exit 1
+            fi
+            TIMEOUT="$2"
             shift 2
             ;;
         --merge-only)
@@ -179,7 +189,7 @@ echo "FARO reference: $FARO_REFERENCE"
 echo "Registration results: $REGISTRATION_DIR"
 echo "Evaluation results: $OUTPUT_DIR"
 echo "Voxel size: $VOXEL_SIZE m; precision/recall threshold: $THRESHOLD m"
-EVALUATION_ARGS=(--voxel-size "$VOXEL_SIZE" --threshold "$THRESHOLD" --jobs "$JOBS")
+EVALUATION_ARGS=(--voxel-size "$VOXEL_SIZE" --threshold "$THRESHOLD" --jobs "$JOBS" --timeout "$TIMEOUT")
 DOCKER_ARGS=(--rm --init --sig-proxy=true)
 if [[ "$FORCE" == true ]]; then
     echo "WARNING: selected eligible evaluation results will be permanently replaced (default; use --no-force to preserve them)."

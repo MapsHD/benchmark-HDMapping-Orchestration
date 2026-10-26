@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio.
 
 ## Known issues
 

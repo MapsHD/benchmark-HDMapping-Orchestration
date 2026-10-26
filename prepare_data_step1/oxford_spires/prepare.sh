@@ -1,5 +1,7 @@
 #!/bin/bash
-# Oxford Spires sequence -> the canonical benchmark inputs, from what download.sh fetched.
+# Oxford Spires sequence -> the canonical benchmark inputs. The one script to run:
+# it builds the Docker images if they are missing (build_images.sh), downloads what
+# is not there yet (download.sh), then converts.
 #
 #   <data_dir>/<name>-hdmapping/   HDMapping session (bag_to_laz): IMU rotated into the
 #                                  lidar frame, in g; ring kept as LAS extra bytes
@@ -12,22 +14,28 @@
 #   <data_dir>/TLS-FARO-Focus/map_gt_0.01.laz       TLS reference, cropped to the walk + 20 m (step 8)
 #
 # Each output is written under a .partial name and renamed when complete, and an
-# existing output is kept, so an interrupted run resumes. Needs the hdmapping-tools
-# and oxford-spires-tools images (build_images.sh).
+# existing output is kept, so an interrupted run resumes.
 #
-# Usage: prepare.sh <sequence> <download_dir> <data_dir> [name]
-#   name  default: the sequence without its date (2024-03-12-keble-college-02 -> keble-college-02)
+# Usage: prepare.sh [sequence] [download_dir] [data_dir] [name]
+# Every argument is optional; the defaults are the ones start_benchmark.sh uses,
+# and the environment variables it sets override them the same way:
+#   sequence      $OXFORD_SPIRES_SEQUENCE, else 2024-03-12-keble-college-02
+#   download_dir  $OXFORD_SPIRES_DOWNLOAD_DIR, else <data_dir>/download
+#   data_dir      $BENCHMARK_DATA_DIR, else ~/hdmapping-benchmark/data-oxford-spires
+#   name          the sequence without its date (2024-03-12-keble-college-02 -> keble-college-02)
 set -euo pipefail
 
-SEQUENCE="${1:?usage: $0 <sequence> <download_dir> <data_dir> [name]}"
-DOWNLOAD_DIR="$(realpath "${2:?usage: $0 <sequence> <download_dir> <data_dir> [name]}")"
-DATA_DIR="${3:?usage: $0 <sequence> <download_dir> <data_dir> [name]}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SEQUENCE="${1:-${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}}"
+DATA_DIR="${3:-${BENCHMARK_DATA_DIR:-$HOME/hdmapping-benchmark/data-oxford-spires}}"
+DOWNLOAD_DIR="${2:-${OXFORD_SPIRES_DOWNLOAD_DIR:-$DATA_DIR/download}}"
 NAME="${4:-$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")}"
 SITE="${SITE:-$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//; s/-[0-9]+$//' <<<"$SEQUENCE")}"
 MSG_HZ="${MSG_HZ:-10}"
 
-mkdir -p "$DATA_DIR"
+mkdir -p "$DATA_DIR" "$DOWNLOAD_DIR"
 DATA_DIR="$(realpath "$DATA_DIR")"
+DOWNLOAD_DIR="$(realpath "$DOWNLOAD_DIR")"
 RAW_DIR="$DOWNLOAD_DIR/$SEQUENCE/raw"
 
 # Containers see the downloads read-only at /download and the data dir at /data.
@@ -39,23 +47,34 @@ tools() { docker_run oxford-spires-tools "$@"; }
 rosbags_convert() { docker_run --entrypoint rosbags-convert oxford-spires-tools "$@"; }
 hdmapping() { docker_run hdmapping-tools "$@"; }
 
-for image in hdmapping-tools oxford-spires-tools; do
-    docker image inspect "$image" >/dev/null 2>&1 || {
-        echo "ERROR: Docker image $image is missing; run $(dirname "$0")/build_images.sh" >&2
-        exit 1
-    }
-done
-mapfile -t BAGS < <(cd "$RAW_DIR" && ls -1 *.bag 2>/dev/null | sort)
+# --- images and downloads -----------------------------------------------------------
+if ! docker image inspect hdmapping-tools >/dev/null 2>&1 || ! docker image inspect oxford-spires-tools >/dev/null 2>&1; then
+    echo "--- building the Docker images"
+    bash "$SCRIPT_DIR/build_images.sh"
+fi
+# Downloads only when something is missing, so a complete download dir works offline.
+if ! ls "$RAW_DIR"/*.bag >/dev/null 2>&1 || [[ ! -f "$DOWNLOAD_DIR/$SEQUENCE/gt-tum.txt" ]] ||
+   [[ ! -f "$DOWNLOAD_DIR/calibration/cam-lidar-imu.yaml" ]] ||
+   [[ ! -f "$DOWNLOAD_DIR/ground_truth_map/$SITE/merged-cloud-1cm.pcd" ]]; then
+    echo "--- downloading $SEQUENCE to $DOWNLOAD_DIR"
+    bash "$SCRIPT_DIR/download.sh" "$SEQUENCE" "$DOWNLOAD_DIR" "$SITE"
+fi
+# Version sort keeps recording order for split bags: ..._2.bag before ..._10.bag.
+mapfile -t BAGS < <(cd "$RAW_DIR" && ls -1 *.bag 2>/dev/null | sort -V)
 if [[ ${#BAGS[@]} -eq 0 ]]; then
-    echo "ERROR: no bags in $RAW_DIR; run download.sh $SEQUENCE $DOWNLOAD_DIR" >&2
+    echo "ERROR: no bags in $RAW_DIR after downloading" >&2
     exit 1
 fi
 
 echo "=== Oxford Spires $SEQUENCE -> $DATA_DIR ($NAME, ${#BAGS[@]} bag part(s)) ==="
 docker run --rm --entrypoint cat hdmapping-tools /usr/local/share/hdmapping-version
 
-Q="$(tools calibration /download/calibration/cam-lidar-imu.yaml)"
-echo "IMU -> lidar rotation (xyzw): $Q"
+read -ra Q <<<"$(tools calibration /download/calibration/cam-lidar-imu.yaml)"
+if [[ ${#Q[@]} -ne 4 ]]; then
+    echo "ERROR: expected a quaternion (qx qy qz qw) from the calibration, got '${Q[*]}'" >&2
+    exit 1
+fi
+echo "IMU -> lidar rotation (xyzw): ${Q[*]}"
 
 # --- HDMapping session --------------------------------------------------------
 SESSION="$NAME-hdmapping"
@@ -63,25 +82,11 @@ if [[ -d "$DATA_DIR/$SESSION" ]]; then
     echo "$SESSION exists, kept"
 else
     rm -rf "$DATA_DIR/$SESSION.partial"
-    mkdir -p "$DATA_DIR/$SESSION.partial"
-    # One session per bag part, then renumbered into one: chunk files sort by time.
-    next=0
-    for i in "${!BAGS[@]}"; do
-        part="$SESSION.partial/part$i"
-        echo "--- bag_to_laz ${BAGS[$i]}"
-        hdmapping bag_to_laz "/download/$SEQUENCE/raw/${BAGS[$i]}" "/data/$part" \
-            --lidar-topic /hesai/pandar --imu-topic /alphasense_driver_ros/imu \
-            --imu-rotation $Q --imu-acc-unit ms2
-        for laz in $(cd "$DATA_DIR/$part" && ls -1 lidar*.laz | sort); do
-            idx="${laz#lidar}"
-            idx="${idx%.laz}"
-            new=$(printf "%04d" "$next")
-            mv "$DATA_DIR/$part/$laz" "$DATA_DIR/$SESSION.partial/lidar$new.laz"
-            mv "$DATA_DIR/$part/imu$idx.csv" "$DATA_DIR/$SESSION.partial/imu$new.csv"
-            next=$((next + 1))
-        done
-        rm -rf "${DATA_DIR:?}/$part"
-    done
+    # All parts in one call: bag_to_laz reads them in order as one recording.
+    echo "--- bag_to_laz ${BAGS[*]}"
+    hdmapping bag_to_laz "${BAGS[@]/#//download/$SEQUENCE/raw/}" "/data/$SESSION.partial" \
+        --lidar-topic /hesai/pandar --imu-topic /alphasense_driver_ros/imu \
+        --imu-rotation "${Q[@]}" --imu-acc-unit ms2
     mv "$DATA_DIR/$SESSION.partial" "$DATA_DIR/$SESSION"
 fi
 

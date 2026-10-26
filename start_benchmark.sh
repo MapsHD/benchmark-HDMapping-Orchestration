@@ -120,10 +120,7 @@ if [ -f "$DATA_DIR/$NAME.bag" ] && [ -d "$DATA_DIR/$NAME-ros2" ] && [ -d "$DATA_
    [ -f "$DATA_DIR/TLS-FARO-Focus/map_gt_0.01.laz" ]; then
     echo "Step 1 outputs exist. Skipping."
 else
-    if ! docker image inspect hdmapping-tools >/dev/null 2>&1 || ! docker image inspect oxford-spires-tools >/dev/null 2>&1; then
-        bash "$OXFORD/build_images.sh"
-    fi
-    bash "$OXFORD/download.sh" "$SEQUENCE" "$DOWNLOAD_DIR"
+    # Builds the images and downloads what is missing, then converts.
     bash "$OXFORD/prepare.sh" "$SEQUENCE" "$DOWNLOAD_DIR" "$DATA_DIR" "$NAME"
 fi
 

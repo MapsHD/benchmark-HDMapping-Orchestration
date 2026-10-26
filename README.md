@@ -26,30 +26,34 @@ Step 1 does everything below on its own; each part can also run by hand.
 
 ## Step 1: dataset → canonical bag
 
-The scripts are in `prepare_data_step1/oxford_spires/`. They use two images, which `build_images.sh` builds:
-
-- `hdmapping-tools`: HDMapping's ROS-free converters `bag_to_laz`, `laz_to_bag`, `laz_to_mcap` and
-  `mcap_to_laz`, from HDMapping branch `canonical-bag`. Set `HDMAPPING_SRC=<checkout>` to build a local
-  checkout instead.
-- `oxford-spires-tools`: `oxford_spires.py` and `rosbags-convert`.
+The scripts are in `prepare_data_step1/oxford_spires/`, and `prepare.sh` is the only one to run. It builds the
+two Docker images if they are missing (`build_images.sh`), downloads what is not there yet (`download.sh`), then
+converts:
 
 ```bash
-prepare_data_step1/oxford_spires/build_images.sh
-prepare_data_step1/oxford_spires/download.sh 2024-03-12-keble-college-02 ~/oxford-download
-prepare_data_step1/oxford_spires/prepare.sh  2024-03-12-keble-college-02 ~/oxford-download ~/hdmapping-benchmark/data-oxford-spires
+prepare_data_step1/oxford_spires/prepare.sh                                  # all defaults, as start_benchmark.sh
+prepare_data_step1/oxford_spires/prepare.sh 2024-03-12-keble-college-02 ~/oxford-download ~/data-oxford-spires
 ```
+
+Every argument is optional: `[sequence] [download_dir] [data_dir] [name]`. The defaults are those of
+`start_benchmark.sh`, and its environment variables override them.
+
+- `hdmapping-tools`: HDMapping's ROS-free converters `bag_to_laz`, `laz_to_bag`, `laz_to_mcap` and
+  `mcap_to_laz`, from HDMapping branch `canonical-bag`. Set `HDMAPPING_SRC=<checkout>` when building to use a
+  local checkout instead.
+- `oxford-spires-tools`: `oxford_spires.py` and `rosbags-convert`.
 
 `prepare.sh` writes, for `<name>` = the sequence without its date:
 
-| Output | How |
-|---|---|
-| `<name>-hdmapping/` | `bag_to_laz` of the raw bag(s). The IMU is rotated into the lidar frame (from `cam-lidar-imu.yaml`) and converted to g. The ring is kept as the LAS extra-bytes attribute `ring`. This is the input of HDMapping-LIO. |
-| `<name>.bag` | `laz_to_bag --lidar-type canonical --msg_hz 10`: the canonical ROS1 bag |
-| `<name>-ros2/` | the same, as a ROS2 sqlite3 bag (`rosbags-convert`; the Humble images have no MCAP plugin) |
-| `<name>.mcap` | the same as MCAP, only with `WRITE_MCAP=1` |
-| `ground_truth.tum` | `gt-tum.txt` (base frame, ICP to TLS) moved to the lidar frame; step 4 uses it |
-| `HDMappingGroundTruth/lio_result_0/` | ground-truth session for steps 4, 7 and 8: raw scans deskewed with the ground truth, in 5 s chunks |
-| `TLS-FARO-Focus/map_gt_0.01.laz` | step 8 reference: the site's TLS map cropped to the walk plus 20 m |
+| Output                               | How                                                                                                                                                                                                                   |
+|--------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `<name>-hdmapping/`                  | `bag_to_laz` of the raw bag(s). The IMU is rotated into the lidar frame (from `cam-lidar-imu.yaml`) and converted to g. The ring is kept as the LAS extra-bytes attribute `ring`. This is the input of HDMapping-LIO. |
+| `<name>.bag`                         | `laz_to_bag --lidar-type canonical --msg_hz 10`: the canonical ROS1 bag                                                                                                                                               |
+| `<name>-ros2/`                       | the same, as a ROS2 sqlite3 bag (`rosbags-convert`; the Humble images have no MCAP plugin)                                                                                                                            |
+| `<name>.mcap`                        | the same as MCAP, only with `WRITE_MCAP=1`                                                                                                                                                                            |
+| `ground_truth.tum`                   | `gt-tum.txt` (base frame, ICP to TLS) moved to the lidar frame; step 4 uses it                                                                                                                                        |
+| `HDMappingGroundTruth/lio_result_0/` | ground-truth session for steps 4, 7 and 8: raw scans deskewed with the ground truth, in 5 s chunks                                                                                                                    |
+| `TLS-FARO-Focus/map_gt_0.01.laz`     | step 8 reference: the site's TLS map cropped to the walk plus 20 m                                                                                                                                                    |
 
 ## Canonical bag
 
@@ -63,8 +67,10 @@ prepare_data_step1/oxford_spires/prepare.sh  2024-03-12-keble-college-02 ~/oxfor
 - The layout matches the Velodyne point type of FAST-LIO (`lidar_type: 2`, `timestamp_unit: 0`), LIO-SAM
   (`sensor: velodyne`) and their derivatives. PCL matches fields by name *and* type, so use the Velodyne
   mode, not an Ouster one (`ring` as uint8).
-- The IMU's lever arm, about 8.6 cm, is not applied: rotation and translation between lidar and IMU are
-  identity in the bag.
+- **Known issue, IMU lever arm:** the IMU is rotated into the lidar frame, but its accelerations are not
+  transferred to the lidar origin. The missing term is `α × r + ω × (ω × r)` for the 8.6 cm lever arm: about
+  0.09 m/s² at 1 rad/s, and about 0.4 m/s² in a 5 rad/s² turn. In the bag, the lidar–IMU extrinsic is identity
+  (rotation and translation), so configs must say identity too.
 - Hesai QT64 values for configs:
   - 64 rings, vertical field of view −52.5° to +52.1°, unevenly spaced;
   - up to about 1200 points per ring per sweep;

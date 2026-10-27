@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -136,6 +136,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   The Livox route gave no LIO-EKF result.
 - **LIO-EKF's map is its local map** (map F-score 0.019, recall 0.012): the run script records `/local_map`, the
   downsampled voxel map, not every scan. This predates the canonical bag.
+- **LeGO-LOAM's RPE is not comparable** with the other methods': its mapping (and so its odometry output) runs
+  every 0.3 s (upstream `mappingProcessInterval`), so its poses come at ~2.5 Hz and RPE is taken over ~0.4 s
+  steps instead of 0.1 s (keble-college-02: RPE 0.586 m, 744 matched poses). APE (0.179 m) and the map
+  (F-score 0.285) are comparable.
 
 ## Other differences from the Bunker branch
 

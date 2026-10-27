@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -121,6 +121,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   upstream `velody16.yaml` with only the sensor description changed. Cause not identified; candidates are the
   uncorrected IMU lever arm (its IMU-as-output model leans on raw accelerations) and `point_filter_num 4` on 64
   rings.
+- **DLO's map is keyframes only** (keble-college-02: map F-score 0.053, recall 0.03, the same as on the Livox
+  route). Its run script records the keyframe clouds, which upstream spaces 5 m apart (`threshD`), not every
+  scan. This predates the canonical bag. Its trajectory also covers only 278 s of the sequence: it starts 5 s
+  late (IMU calibration) and ends 17 s early (not investigated; probably processing lag). DLO does not deskew.
 
 ## Other differences from the Bunker branch
 

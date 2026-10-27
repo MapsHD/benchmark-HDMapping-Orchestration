@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -140,6 +140,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   every 0.3 s (upstream `mappingProcessInterval`), so its poses come at ~2.5 Hz and RPE is taken over ~0.4 s
   steps instead of 0.1 s (keble-college-02: RPE 0.586 m, 744 matched poses). APE (0.179 m) and the map
   (F-score 0.285) are comparable.
+- **NV-LIOM's RPE is not comparable** either, the other way round: its odometry is the 400 Hz IMU odometry,
+  so evo pairs consecutive poses ~40 ms apart (keble-college-02: RPE 0.0062 m, 7607 matched poses). APE (0.147 m)
+  and the map (F-score 0.377) are comparable. Its range image has evenly spaced rows (64 over 106.5 deg), so a few
+  of the QT64's denser rings near the horizon (1.46 deg apart) share a row; NV-LIOM keeps the nearest point.
 
 ## Other differences from the Bunker branch
 

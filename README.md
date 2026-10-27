@@ -92,16 +92,18 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
-in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far only
-R-VoxelMap:
-- Its Velodyne-with-time mode (`lidar_type: 5`) converts `time` to ms with a hard-coded `1e-3`, i.e. it assumes
+in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
+- **R-VoxelMap:** its Velodyne-with-time mode (`lidar_type: 5`) converts `time` to ms with a hard-coded `1e-3`, i.e. it assumes
   µs. Patched to `1e3` for the canonical seconds; without it deskew is off.
-- It stamps odometry and clouds with `ros::Time::now()`, the replay clock at publish time, 10–20 ms behind the
+- **R-VoxelMap:** it stamps odometry and clouds with `ros::Time::now()`, the replay clock at publish time, 10–20 ms behind the
   scan. Patched to `lidar_end_time`, which its own TUM output uses. Without it evo pairs only 913 of 2996 poses
   with the ground truth. The Livox route has the same problem.
+- **DLIO** keeps `t`, `time` and `timestamp` in one union, and PCL copies fields in offset order, so with the
+  canonical `time` + `t` the union holds `t`; but its sensor detection stops at `time` (VELODYNE) and reads the
+  ns bits as float seconds (~1e-37): deskew silently off. Patched to pick OUSTER (`t`) whenever `t` is present.
 
 ## Known issues
 

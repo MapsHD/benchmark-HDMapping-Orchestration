@@ -92,18 +92,24 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio.
 
 ## Known issues
 
 - **IMU lever arm:** see "Canonical bag". The accelerations are not transferred to the lidar origin.
 - **Faster-LIO is worse on the canonical bag than on the Livox route** (keble-college-02: APE 0.103 m and map
   F-score 0.367, against 0.064 m and 0.552). Its canonical config is its upstream `velodyne.yaml` with only the
-  sensor description changed, and everything else in that file was tuned for NCLT. The likely cause is
+  sensor description changed, and everything else in that file was tuned for NCLT. A suspect was
   `extrinsic_est_en: true` (online IMU–lidar estimation), which is off in its `avia.yaml` and in FAST-LIO's
-  `velodyne.yaml`. It is left as is by the sensor-description-only rule. The alternative, a written rule to turn
-  off online extrinsic estimation for every algorithm when the bag's extrinsic is exact (as it is here), was
-  considered and not taken.
+  `velodyne.yaml`. But PV-LIO's upstream `velodyne.yaml` has it on too and scores APE 0.043 m on the canonical
+  bag, so that setting alone does not explain it; the cause is open. It is left as is by the
+  sensor-description-only rule. The alternative, a written rule to turn off online extrinsic estimation for every
+  algorithm when the bag's extrinsic is exact (as it is here), was considered and not taken.
+- **Point-LIO is worse on the canonical bag than on the Livox route** (keble-college-02: APE 0.189 m and map
+  F-score 0.359, against 0.099 m and 0.407), while its RPE is better (0.0086 m against 0.0166 m). Its config is
+  upstream `velody16.yaml` with only the sensor description changed. Cause not identified; candidates are the
+  uncorrected IMU lever arm (its IMU-as-output model leans on raw accelerations) and `point_filter_num 4` on 64
+  rings.
 
 ## Other differences from the Bunker branch
 

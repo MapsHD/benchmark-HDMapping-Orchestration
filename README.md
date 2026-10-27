@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -104,6 +104,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **DLIO** keeps `t`, `time` and `timestamp` in one union, and PCL copies fields in offset order, so with the
   canonical `time` + `t` the union holds `t`; but its sensor detection stops at `time` (VELODYNE) and reads the
   ns bits as float seconds (~1e-37): deskew silently off. Patched to pick OUSTER (`t`) whenever `t` is present.
+- **CT-ICP** publishes the pose at the end of the scan with the cloud's header stamp, the first point's time, so
+  every pose is one sweep (0.1 s) early. Patched to stamp the odometry at the scan end (header stamp + the scan's
+  point-time span). On keble-college-02 the unpatched run scored APE 0.131 m; shifting that trajectory by +0.1 s
+  gives 0.091 m.
 
 ## Known issues
 

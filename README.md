@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -108,6 +108,9 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   every pose is one sweep (0.1 s) early. Patched to stamp the odometry at the scan end (header stamp + the scan's
   point-time span). On keble-college-02 the unpatched run scored APE 0.131 m; shifting that trajectory by +0.1 s
   gives 0.091 m.
+- **Voxel-SLAM** stamps its pose (TF `camera_init` -> `aft_mapped`) and `/map_scan` with `ros::Time::now()`,
+  so consecutive stamps were 90-111 ms apart and evo paired only 2544 of 2995 poses. Patched to the state's time
+  `x_curr.t` (scan end): 2980 poses, APE 0.035 m (unchanged), RPE 0.0063 -> 0.0034 m.
 
 ## Known issues
 

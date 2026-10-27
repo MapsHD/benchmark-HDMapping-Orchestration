@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -129,6 +129,13 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   route). Its run script records the keyframe clouds, which upstream spaces 5 m apart (`threshD`), not every
   scan. This predates the canonical bag. Its trajectory also covers only 278 s of the sequence: it starts 5 s
   late (IMU calibration) and ends 17 s early (not investigated; probably processing lag). DLO does not deskew.
+- **LIO-EKF drifts horizontally** (keble-college-02: APE 1.539 m, of which 1.53 m in xy and 0.16 m in z,
+  growing to 3.8 m at the end), while its RPE is 0.050 m. Its config is upstream `m2dgr.yaml` (a ground robot:
+  1 m voxels, one ICP iteration, IMU noise of M2DGR's handsfree IMU) with only the sensor description changed.
+  Its upstream `newerCollege.yaml` (handheld Ouster) was not tried: choosing a config by its score is tuning.
+  The Livox route gave no LIO-EKF result.
+- **LIO-EKF's map is its local map** (map F-score 0.019, recall 0.012): the run script records `/local_map`, the
+  downsampled voxel map, not every scan. This predates the canonical bag.
 
 ## Other differences from the Bunker branch
 

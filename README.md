@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -144,6 +144,9 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   so evo pairs consecutive poses ~40 ms apart (keble-college-02: RPE 0.0062 m, 7607 matched poses). APE (0.147 m)
   and the map (F-score 0.377) are comparable. Its range image has evenly spaced rows (64 over 106.5 deg), so a few
   of the QT64's denser rings near the horizon (1.46 deg apart) share a row; NV-LIOM keeps the nearest point.
+- **SE3-LIO's map scores low** (keble-college-02: map F-score 0.226, against APE 0.049 m; Livox route 0.261): the
+  run script records `/local/cloud_registered_body`, probably the scan after SE3-LIO's 1 m downsampling (not
+  checked). This predates the canonical bag.
 
 ## Other differences from the Bunker branch
 

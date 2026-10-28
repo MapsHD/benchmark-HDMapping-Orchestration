@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict, c3p-voxelmap.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -118,6 +118,8 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   it skips every scan and publishes nothing; whether it happens depends on memory contents. Patched to `false`, as
   in FAST-LIO. A bug fix, not a sensor description. The Livox route's empty MAP-LIO result is probably the same bug
   (not checked).
+- **C3P-VoxelMap:** same `time * 1e-3` (µs) assumption as R-VoxelMap in its VELO32 handler (`lidar_type: 5`).
+  Patched to `1e3`.
 
 ## Known issues
 
@@ -174,6 +176,11 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   ~1 m at 45-60 s, 13 m at 200 s, >60 m near the end; the map evaluation hits step 8's 900 s limit. Its upstream
   spinning-lidar config (KITTI) is lidar-only and reads no per-point time, so scans are not deskewed. Config-only:
   lidar_type 3 (the velodyne handler without its HDL-64 elevation window), calib_laser false.
+- **C3P-VoxelMap runs with its IMU on**, beyond the sensor description (keble-college-02: APE 0.059 m, RPE
+  0.037 m, map F-score 0.388; Livox route 24.7 / 1.26 / 0.005): its upstream spinning-lidar config (KITTI) is
+  lidar-only, and like that it diverged (APE 22.3 m, F 0.009). With `imu_en: true` (identity extrinsic, default
+  noise scales) it propagates and deskews with the IMU. The high RPE is probably its pose stamps,
+  `ros::Time::now()` at publish time (not checked).
 
 ## Other differences from the Bunker branch
 

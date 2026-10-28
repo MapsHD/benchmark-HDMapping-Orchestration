@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -150,6 +150,9 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **SE3-LIO's map scores low** (keble-college-02: map F-score 0.226, against APE 0.049 m; Livox route 0.261): the
   run script records `/local/cloud_registered_body`, probably the scan after SE3-LIO's 1 m downsampling (not
   checked). This predates the canonical bag.
+- **LOG-LIO2 runs without its normal model** (keble-college-02: APE 0.033 m, RPE 0.0022 m, map F-score 0.573;
+  Livox route 0.224 / 0.108 / 0.151): `compute_normal` is off, because the ring-based normals need a ring angle
+  table LOG-LIO2 has only for its own lidars. The score is plain point-to-plane LIO, not the full method.
 
 ## Other differences from the Bunker branch
 

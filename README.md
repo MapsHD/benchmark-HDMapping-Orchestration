@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict, c3p-voxelmap, mm-lins, bievr-lio, d-lio, ellipselio.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict, c3p-voxelmap, mm-lins, bievr-lio, d-lio, ellipselio, genz-icp.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -185,6 +185,11 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   Newer College parameters (full-resolution cloud, up to 500 solver iterations) a scan takes ~0.5 s, so it
   publishes at ~2 Hz (1134 poses) and in real-time playback skips most scans; the map evaluation hits step 8's
   900 s limit. Config-only (run script parameters).
+- **GenZ-ICP jumps** (keble-college-02: APE 4.01 m, RPE 0.392 m, map F-score 0.030; Livox route 16.4 / 3.32, map
+  timed out): within 0.15 m for the first 60 s, then a ~8 m jump between 60 and 90 s that stays until ~200 s. It
+  runs at ~5.5 Hz in real-time playback, and is lidar-only without deskew (as upstream). Config-only.
+- **ROS2 reruns after a crash:** step 3 does not clear `<data>/<algo>/`, and `ros2 bag record` refuses an existing
+  `recorded-*` folder, so a rerun after an aborted run records nothing. Remove the stale folder first.
 
 ## Other differences from the Bunker branch
 

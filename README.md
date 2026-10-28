@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -153,6 +153,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **LOG-LIO2 runs without its normal model** (keble-college-02: APE 0.033 m, RPE 0.0022 m, map F-score 0.573;
   Livox route 0.224 / 0.108 / 0.151): `compute_normal` is off, because the ring-based normals need a ring angle
   table LOG-LIO2 has only for its own lidars. The score is plain point-to-plane LIO, not the full method.
+- **SR-LIO** (keble-college-02: APE 0.046 m, RPE 0.0031 m, map F-score 0.076; Livox route 0.040 / 0.012 / 0.138):
+  it publishes a pose per half-sweep (20 Hz), so its RPE is over 50 ms steps. The map scores low (recall 0.042)
+  probably because the run script records `/cloud_global_map`, only the points each sweep adds to the voxel map (not
+  checked). This predates the canonical bag.
 
 ## Other differences from the Bunker branch
 

@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -114,6 +114,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **F-LOAM** ignores the `ring` field and derives the scan ID from the elevation angle with fixed Velodyne tables;
   the HDL-64 one (−24.3 to +2°) keeps only ~20 of the QT64's rings. Patched to take the scan ID from `ring` when the
   cloud has one.
+- **MAP-LIO** never initialises `bool lidar_pushed`. With a garbage value its sync never loads the first scan, so
+  it skips every scan and publishes nothing; whether it happens depends on memory contents. Patched to `false`, as
+  in FAST-LIO. A bug fix, not a sensor description. The Livox route's empty MAP-LIO result is probably the same bug
+  (not checked).
 
 ## Known issues
 

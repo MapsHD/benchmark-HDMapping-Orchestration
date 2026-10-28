@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -170,6 +170,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **I2EKF-LO diverges** (keble-college-02: APE 20.97 m, RPE 0.133 m; Livox route 15.67 / 0.099 / F 0.029):
   within ~0.25 m for the first ~45 s, then it drifts (~13 m at 150 s, ~75 m at the end); the map evaluation hits
   step 8's 900 s limit. I2EKF-LO is lidar-only; config-only conversion, no code patch.
+- **VoxelMap diverges** (keble-college-02: APE 22.17 m, RPE 0.339 m; Livox route 17.9 / 0.750, map failed):
+  ~1 m at 45-60 s, 13 m at 200 s, >60 m near the end; the map evaluation hits step 8's 900 s limit. Its upstream
+  spinning-lidar config (KITTI) is lidar-only and reads no per-point time, so scans are not deskewed. Config-only:
+  lidar_type 3 (the velodyne handler without its HDL-64 elevation window), calib_laser false.
 
 ## Other differences from the Bunker branch
 

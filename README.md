@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -167,6 +167,9 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **F-LOAM diverges** (keble-college-02: APE 5.75 m, RPE 0.085 m; Livox route 15.6 / 1.78): about 2-3 m for the
   first ~250 s, then 22 m at the end; the map evaluation hits step 8's 900 s limit. F-LOAM is lidar-only with no
   deskew. Its ring patch takes the scan ID from the cloud's `ring` field instead of the HDL-64 elevation table.
+- **I2EKF-LO diverges** (keble-college-02: APE 20.97 m, RPE 0.133 m; Livox route 15.67 / 0.099 / F 0.029):
+  within ~0.25 m for the first ~45 s, then it drifts (~13 m at 150 s, ~75 m at the end); the map evaluation hits
+  step 8's 900 s limit. I2EKF-LO is lidar-only; config-only conversion, no code patch.
 
 ## Other differences from the Bunker branch
 

@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -111,6 +111,9 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **Voxel-SLAM** stamps its pose (TF `camera_init` -> `aft_mapped`) and `/map_scan` with `ros::Time::now()`,
   so consecutive stamps were 90-111 ms apart and evo paired only 2544 of 2995 poses. Patched to the state's time
   `x_curr.t` (scan end): 2980 poses, APE 0.035 m (unchanged), RPE 0.0063 -> 0.0034 m.
+- **F-LOAM** ignores the `ring` field and derives the scan ID from the elevation angle with fixed Velodyne tables;
+  the HDL-64 one (−24.3 to +2°) keeps only ~20 of the QT64's rings. Patched to take the scan ID from `ring` when the
+  cloud has one.
 
 ## Known issues
 
@@ -157,6 +160,9 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   it publishes a pose per half-sweep (20 Hz), so its RPE is over 50 ms steps. The map scores low (recall 0.042)
   probably because the run script records `/cloud_global_map`, only the points each sweep adds to the voxel map (not
   checked). This predates the canonical bag.
+- **F-LOAM diverges** (keble-college-02: APE 5.75 m, RPE 0.085 m; Livox route 15.6 / 1.78): about 2-3 m for the
+  first ~250 s, then 22 m at the end; the map evaluation hits step 8's 900 s limit. F-LOAM is lidar-only with no
+  deskew. Its ring patch takes the scan ID from the cloud's `ring` field instead of the HDL-64 elevation table.
 
 ## Other differences from the Bunker branch
 

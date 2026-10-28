@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict, c3p-voxelmap, mm-lins, bievr-lio.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict, c3p-voxelmap, mm-lins, bievr-lio, d-lio.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -181,6 +181,10 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
   lidar-only, and like that it diverged (APE 22.3 m, F 0.009). With `imu_en: true` (identity extrinsic, default
   noise scales) it propagates and deskews with the IMU. The high RPE is probably its pose stamps,
   `ros::Time::now()` at publish time (not checked).
+- **D-LIO diverges** (keble-college-02: APE 28.4 m, RPE 1.14 m; Livox route: no trajectory): with its own
+  Newer College parameters (full-resolution cloud, up to 500 solver iterations) a scan takes ~0.5 s, so it
+  publishes at ~2 Hz (1134 poses) and in real-time playback skips most scans; the map evaluation hits step 8's
+  900 s limit. Config-only (run script parameters).
 
 ## Other differences from the Bunker branch
 

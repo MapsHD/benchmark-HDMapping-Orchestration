@@ -92,7 +92,7 @@ Do it one algorithm at a time:
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a
-Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict, c3p-voxelmap, mm-lins, bievr-lio, d-lio, ellipselio, genz-icp, glim, lidar_odometry_ros_wrapper, mola.
+Livox one (`raw`, `pc`, `ros2`, `ros2-lidar`). Converted so far: fast-lio, lio-sam, kiss-icp, faster-lio, point-lio, ig-lio, pv-lio, r-voxelmap, dlio, dlo, ct-icp, lio-ekf, lego-loam, form, nv-liom, se3-lio, dalislam, voxelslam, log-lio2, sr-lio, floam, map-lio, super-lio, i2ekf-lo, voxel-map, slict, c3p-voxelmap, mm-lins, bievr-lio, d-lio, ellipselio, genz-icp, glim, lidar_odometry_ros_wrapper, mola, superOdom.
 
 **Exception, code patches:** where a config cannot describe the sensor, the branch patches the algorithm's code
 in its Dockerfile, with a guard that fails the build if the patched line changes upstream. So far:
@@ -193,6 +193,9 @@ in its Dockerfile, with a guard that fails the build if the patched line changes
 - **MOLA's APE is worse than on the Livox route** (keble-college-02: APE 0.273 m vs 0.091 m; RPE 0.059 vs 0.336 m;
   F-score 0.330 vs 0.254): with the first 20 s aligned it drifts to ~0.9 m at 120-200 s and returns at the end.
   Only the topics changed; not investigated.
+- **SuperOdom is worse than on the Livox route** (keble-college-02: APE 0.202 m vs 0.051 m, F-score 0.297 vs
+  0.538): with the first 20 s aligned it drifts to ~5.5 m at 120 s and returns at the end. Velodyne input (its own
+  vlp_16 config, 64 lines, identity extrinsic); not investigated.
 
 ## Other differences from the Bunker branch
 

@@ -51,19 +51,53 @@ else
     cp ground_truth.tum "$DATA_DIR/tum/"
 fi
 
-docker run --rm -it \
-    --user 1000:1000 \
-    -e ONLY_ALGOS="${ONLY_ALGOS:-}" \
-    -v "$SCRIPT_DIR/save_to_tum.py":/workspace/save_to_tum.py:ro \
-    -v "$ALGOS_CONF":/workspace/algorithms.conf:ro \
-    -v "$DATA_DIR":/data \
-    "$IMAGE_NAME" bash -c '
+# One container per algorithm: registering all sessions in one process holds
+# every point cloud at once (58 GB for 41 sessions on Oxford Spires, killed by
+# the OOM killer). Each session is registered against the ground truth alone;
+# step 5 aligns every trajectory to the ground truth, so the results match.
+SELECTED=()
+while IFS=$'\t' read -r alg output; do
+    # An empty output column means no automated result (e.g. a manual procedure).
+    [ -n "$output" ] || continue
+    if [ ! -f "$DATA_DIR/$alg/output_hdmapping-$output/session.json" ]; then
+        echo "Skipping $alg (no session at $alg/output_hdmapping-$output/session.json)"
+        continue
+    fi
+    SELECTED+=("$alg")
+done < <(awk -F'|' -v only=" ${ONLY_ALGOS:-} " '
+    /^[[:space:]]*#/ { next }
+    /^[[:space:]]*$/ { next }
+    {
+        for (i = 1; i <= NF; i++) { gsub(/^[ \t]+|[ \t]+$/, "", $i) }
+        if (only != "  " && index(only, " " $3 " ") == 0) next
+        print $3 "\t" $4
+    }
+' "$ALGOS_CONF")
+
+TTY_ARGS=()
+[ -t 1 ] && TTY_ARGS=(-it)
+
+FAILED=()
+for i in "${!SELECTED[@]}"; do
+    alg="${SELECTED[$i]}"
+    echo "=== Step 4: $alg ($((i + 1))/${#SELECTED[@]}) ==="
+    docker run --rm "${TTY_ARGS[@]}" \
+        --user 1000:1000 \
+        -e ONLY_ALGOS="$alg" \
+        -v "$SCRIPT_DIR/save_to_tum.py":/workspace/save_to_tum.py:ro \
+        -v "$ALGOS_CONF":/workspace/algorithms.conf:ro \
+        -v "$DATA_DIR":/data \
+        "$IMAGE_NAME" bash -c '
 cd /workspace/HDMapping
 
 export PYTHONPATH=/workspace/HDMapping/build/bin/RelWithDebInfo:$PYTHONPATH
 export LD_LIBRARY_PATH=/workspace/HDMapping/build/bin/RelWithDebInfo:$LD_LIBRARY_PATH
 
-python3 -c "import multi_session_registration_py; print(\"binding OK\")"
-
 python3 /workspace/save_to_tum.py
-'
+' || FAILED+=("$alg")
+done
+
+if [ ${#FAILED[@]} -gt 0 ]; then
+    echo "ERROR: step 4 failed for: ${FAILED[*]}" >&2
+    exit 1
+fi

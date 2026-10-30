@@ -43,9 +43,17 @@ check_only_algos
 # the algorithm (its algorithms.conf input is not a canonical one yet).
 declare -A NO_BRANCH=()
 
+# Repos that need no dataset-specific config take a fixed branch instead.
+# HDMapping-LIO reads the HDMapping-format folder made in step 1 (input
+# 'hdmapping'), so its run script is the same for every dataset; it lives on
+# the Bunker branch until the repo has a hdmapping-benchmark-canonical branch.
+declare -A BRANCH_OVERRIDE=(
+  [benchmark-HDMapping_LIO-to-HDMapping]="Bunker-DVI-Dataset-reg-1"
+)
+
 clone_repo() {
   local repo_name="$1"
-  local branch_name="$2"
+  local branch_name="${BRANCH_OVERRIDE[$1]:-$2}"
   local dir_name
   local url="https://github.com/MapsHD/${repo_name}.git"
   dir_name=$(basename "$repo_name")

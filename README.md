@@ -193,7 +193,8 @@ Do it one algorithm at a time:
    rings, time unit, ranges, field of view and IMU noise.
 4. In `algorithms.conf` on this branch, set the algorithm's input to `canonical` (ROS1 bag) or
    `canonical-ros2` (ROS2 bag). HDMapping-LIO's input, `hdmapping` (the session), is already produced
-   here, so it runs from its repo's current checkout until that repo has a `hdmapping-benchmark-canonical` branch.
+   here and is the same for every dataset, so step 2 checks out that repo's `Bunker-DVI-Dataset-reg-1` branch
+   (`BRANCH_OVERRIDE` in `clone_github_repositories_step2.sh`) until it has a `hdmapping-benchmark-canonical` branch.
 5. Run `./start_benchmark.sh <algo>`.
 
 Step 2 skips repos without that branch on GitHub, and step 3 skips algorithms whose input is still a

@@ -1,7 +1,7 @@
 import os
 import glob
 
-DATA_DIR = os.environ.get("BENCHMARK_DATA_DIR", "~/hdmapping-benchmark/data")
+DATA_DIR = "~/hdmapping-benchmark/data"
 
 def tum_info(path):
 

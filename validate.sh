@@ -26,8 +26,8 @@ fi
 
 WORKSPACE="$HOME/hdmapping-benchmark"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-# Oxford-Spires: the data dir and sequence come from start_benchmark.sh.
-DATA_DIR="${BENCHMARK_DATA_DIR:-$WORKSPACE/data-oxford-spires}"
+DATA_DIR="$WORKSPACE/data"
+# Oxford-Spires: the sequence comes from start_benchmark.sh.
 SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
 NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
 SESSION="$DATA_DIR/HDMappingGroundTruth/lio_result_0/session.mjs"

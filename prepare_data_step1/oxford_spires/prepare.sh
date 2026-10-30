@@ -21,13 +21,13 @@
 # and the environment variables it sets override them the same way:
 #   sequence      $OXFORD_SPIRES_SEQUENCE, else 2024-03-12-keble-college-02
 #   download_dir  $OXFORD_SPIRES_DOWNLOAD_DIR, else <data_dir>/download
-#   data_dir      $BENCHMARK_DATA_DIR, else ~/hdmapping-benchmark/data-oxford-spires
+#   data_dir      ~/hdmapping-benchmark/data
 #   name          the sequence without its date (2024-03-12-keble-college-02 -> keble-college-02)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SEQUENCE="${1:-${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}}"
-DATA_DIR="${3:-${BENCHMARK_DATA_DIR:-$HOME/hdmapping-benchmark/data-oxford-spires}}"
+DATA_DIR="${3:-$HOME/hdmapping-benchmark/data}"
 DOWNLOAD_DIR="${2:-${OXFORD_SPIRES_DOWNLOAD_DIR:-$DATA_DIR/download}}"
 NAME="${4:-$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")}"
 SITE="${SITE:-$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//; s/-[0-9]+$//' <<<"$SEQUENCE")}"

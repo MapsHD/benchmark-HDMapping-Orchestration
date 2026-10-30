@@ -1,7 +1,7 @@
 #!/bin/bash
 
 IMAGE_NAME="hdmapping_tum"
-DATA_DIR="${BENCHMARK_DATA_DIR:-$HOME/hdmapping-benchmark/data}"
+DATA_DIR="$HOME/hdmapping-benchmark/data"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 source "$SCRIPT_DIR/../algos_lib.sh"

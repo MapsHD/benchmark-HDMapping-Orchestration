@@ -8,7 +8,6 @@ usage() {
     echo "Runs the whole benchmark pipeline (steps 1-8) on one Oxford Spires sequence."
     echo "Step 1 downloads it (if needed) and converts it to the canonical bag; see README, 'Oxford Spires'."
     echo "Environment: OXFORD_SPIRES_SEQUENCE (default 2024-03-12-keble-college-02),"
-    echo "  BENCHMARK_DATA_DIR (default ~/hdmapping-benchmark/data-oxford-spires),"
     echo "  OXFORD_SPIRES_DOWNLOAD_DIR (default <data dir>/download), STEP8_TIMEOUT (default 900 s),"
     echo "  ALGO_BRANCH (algorithm repos' branch, default hdmapping-benchmark-canonical)."
     echo "Optionally pass algorithm ids (the 'id' column of algorithms.conf) to"
@@ -77,12 +76,12 @@ done
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
 NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
-DATA_DIR="${BENCHMARK_DATA_DIR:-$HOME/hdmapping-benchmark/data-oxford-spires}"
+DATA_DIR=~/hdmapping-benchmark/data
 DOWNLOAD_DIR="${OXFORD_SPIRES_DOWNLOAD_DIR:-$DATA_DIR/download}"
 STEP8_TIMEOUT="${STEP8_TIMEOUT:-900}"
 mkdir -p "$DATA_DIR"
-# Steps 4-6 and validate.sh read the data dir from the environment.
-export BENCHMARK_DATA_DIR="$DATA_DIR" OXFORD_SPIRES_SEQUENCE="$SEQUENCE"
+# validate.sh reads the sequence from the environment.
+export OXFORD_SPIRES_SEQUENCE="$SEQUENCE"
 
 if ! command -v python3 >/dev/null 2>&1; then
     echo "ERROR: Python 3 is required to validate Step 7 and Step 8 settings" >&2

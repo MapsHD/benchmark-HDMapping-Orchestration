@@ -3,7 +3,8 @@
 #   <download_dir>/<sequence>/raw/*.bag                  ROS1 bag part(s), all topics
 #   <download_dir>/<sequence>/gt-tum.txt                 ground truth (base frame, ICP to TLS)
 #   <download_dir>/calibration/{cam-lidar-imu,imu}.yaml  extrinsics and IMU noise
-#   <download_dir>/ground_truth_map/<site>/merged-cloud-1cm.pcd   TLS map of the site
+#   <download_dir>/ground_truth_map/<site>/merged-cloud-1cm.{pcd,e57}  TLS map of the site
+#     (.pcd where the site has one, else .e57: e.g. bodleian-library has only .e57)
 # Only core sequences have gt-tum.txt. Downloads resume (wget -c).
 #
 # Usage: download.sh <sequence> <download_dir> [site]
@@ -38,6 +39,13 @@ wget -c -q -P "$DOWNLOAD_DIR/$SEQUENCE" "$HF/sequences/$SEQUENCE/processed/traje
 for f in cam-lidar-imu.yaml imu.yaml; do
     wget -c -q -P "$DOWNLOAD_DIR/calibration" "$HF/calibration/$f"
 done
-wget -c --progress=dot:giga -P "$DOWNLOAD_DIR/ground_truth_map/$SITE" "$HF/ground_truth_map/$SITE/merged-cloud-1cm.pcd"
+MAP=$(curl -sf "$API/ground_truth_map/$SITE" | python3 -c 'import json, sys
+paths = [f["path"] for f in json.load(sys.stdin)]
+print(next((p for ext in (".pcd", ".e57") for p in paths if p.endswith("merged-cloud-1cm" + ext)), ""))')
+if [[ -z "$MAP" ]]; then
+    echo "ERROR: no merged-cloud-1cm.pcd or .e57 under ground_truth_map/$SITE" >&2
+    exit 1
+fi
+wget -c --progress=dot:giga -P "$DOWNLOAD_DIR/ground_truth_map/$SITE" "$HF/$MAP"
 
 echo "Downloaded to $DOWNLOAD_DIR"

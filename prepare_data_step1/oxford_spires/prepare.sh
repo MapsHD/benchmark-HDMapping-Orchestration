@@ -52,10 +52,13 @@ if ! docker image inspect hdmapping-tools >/dev/null 2>&1 || ! docker image insp
     echo "--- building the Docker images"
     bash "$SCRIPT_DIR/build_images.sh"
 fi
+# The site's TLS map: .pcd where published, else .e57 (bodleian-library has only .e57).
+tls_map() {
+    ls "$DOWNLOAD_DIR/ground_truth_map/$SITE"/merged-cloud-1cm.{pcd,e57} 2>/dev/null | head -1 || true
+}
 # Downloads only when something is missing, so a complete download dir works offline.
 if ! ls "$RAW_DIR"/*.bag >/dev/null 2>&1 || [[ ! -f "$DOWNLOAD_DIR/$SEQUENCE/gt-tum.txt" ]] ||
-   [[ ! -f "$DOWNLOAD_DIR/calibration/cam-lidar-imu.yaml" ]] ||
-   [[ ! -f "$DOWNLOAD_DIR/ground_truth_map/$SITE/merged-cloud-1cm.pcd" ]]; then
+   [[ ! -f "$DOWNLOAD_DIR/calibration/cam-lidar-imu.yaml" ]] || [[ -z "$(tls_map)" ]]; then
     echo "--- downloading $SEQUENCE to $DOWNLOAD_DIR"
     bash "$SCRIPT_DIR/download.sh" "$SEQUENCE" "$DOWNLOAD_DIR" "$SITE"
 fi
@@ -131,7 +134,7 @@ if [[ ! -f "$DATA_DIR/$GT_SESSION/session.mjs" ]]; then
 fi
 TLS=TLS-FARO-Focus/map_gt_0.01.laz
 if [[ ! -f "$DATA_DIR/$TLS" ]]; then
-    tools tls-reference "/download/ground_truth_map/$SITE/merged-cloud-1cm.pcd" /data/ground_truth.tum \
+    tools tls-reference "/download/ground_truth_map/$SITE/$(basename "$(tls_map)")" /data/ground_truth.tum \
         "/data/$TLS.partial.laz" --margin 20
     mv "$DATA_DIR/$TLS.partial.laz" "$DATA_DIR/$TLS"
 fi

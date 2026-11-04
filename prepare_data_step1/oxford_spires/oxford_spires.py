@@ -13,7 +13,7 @@
       of the HDMapping session, deskewed with the ground-truth poses (interpolated per
       point) and cut into --chunk-s chunks, each in its own chunk frame. In the TLS frame,
       like the ground truth.
-  tls-reference <merged-cloud-1cm.pcd> <ground_truth.tum> <out.laz> [--margin 20]
+  tls-reference <merged-cloud-1cm.pcd|.e57> <ground_truth.tum> <out.laz> [--margin 20]
       Writes the step 8 reference: the site's TLS map cropped to the walked path plus
       --margin metres, as LAZ (point format 1, 0.1 mm scale).
 
@@ -277,14 +277,36 @@ def read_pcd_xyz_intensity(path):
     return xyz, inten
 
 
+def read_e57_xyz_intensity(path, lo, hi):
+    """E57 scans (bodleian-library has no PCD), each placed by its pose and cropped to lo..hi
+    as it is read, so the whole map is never held in memory. Returns the kept points and the
+    total point count."""
+    import pye57
+
+    e57 = pye57.E57(path)
+    xyz_parts, inten_parts, total = [], [], 0
+    for i in range(e57.scan_count):
+        scan = e57.read_scan(i, intensity=True, ignore_missing_fields=True)
+        xyz = np.stack([scan["cartesianX"], scan["cartesianY"], scan["cartesianZ"]], 1)
+        keep = np.all((xyz >= lo) & (xyz <= hi), 1)
+        total += len(keep)
+        xyz_parts.append(xyz[keep])
+        inten = scan.get("intensity")
+        inten_parts.append(inten[keep].astype(np.float64) if inten is not None else np.zeros(keep.sum()))
+    return np.concatenate(xyz_parts), np.concatenate(inten_parts), total
+
+
 def cmd_tls_reference(args):
     import laspy
 
     gt = np.loadtxt(args.gt, ndmin=2)[:, 1:4]
     lo, hi = gt.min(0) - args.margin, gt.max(0) + args.margin
-    xyz, inten = read_pcd_xyz_intensity(args.pcd)
-    keep = np.all((xyz >= lo) & (xyz <= hi), 1)
-    xyz, inten = xyz[keep], inten[keep]
+    if args.pcd.endswith(".e57"):
+        xyz, inten, total = read_e57_xyz_intensity(args.pcd, lo, hi)
+    else:
+        xyz, inten = read_pcd_xyz_intensity(args.pcd)
+        keep = np.all((xyz >= lo) & (xyz <= hi), 1)
+        xyz, inten, total = xyz[keep], inten[keep], len(keep)
     if inten.size and inten.max() <= 1.0:
         inten = inten * 65535  # normalized intensity -> LAS uint16
     h = laspy.LasHeader(point_format=1, version="1.2")
@@ -295,7 +317,7 @@ def cmd_tls_reference(args):
     las.intensity = np.clip(inten, 0, 65535).astype(np.uint16)
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     las.write(args.out)
-    print(f"{keep.sum()} of {len(keep)} TLS points in {np.round(lo, 1)} .. {np.round(hi, 1)} -> {args.out}")
+    print(f"{len(xyz)} of {total} TLS points in {np.round(lo, 1)} .. {np.round(hi, 1)} -> {args.out}")
 
 
 def main():

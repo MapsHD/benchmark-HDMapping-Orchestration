@@ -115,6 +115,7 @@ and stops because `data/reg-1.bag` is missing.
 | `OXFORD_SPIRES_SEQUENCE` | `start_benchmark.sh`, Step 1 | `2024-03-12-keble-college-02` |
 | `OXFORD_SPIRES_DOWNLOAD_DIR` | `start_benchmark.sh`, Step 1 | `data/download` |
 | `ALGO_BRANCH` | `start_benchmark.sh` | `hdmapping-benchmark-canonical` |
+| `CANONICAL_SENSOR` (`qt64` \| `mid360`) | Step 3, see [Canonical bag sensor](#canonical-bag-sensor) | `<data dir>/canonical_sensor`, else `qt64` |
 | `--bucket-size M` | Step 7 | `0.05` |
 | `--voxel-size M` (`0` = off) | Step 8 | `0.05` |
 | `--threshold M` | Step 8 precision/recall | `0.05` |
@@ -128,6 +129,21 @@ with `start_benchmark.sh`. `start_benchmark.sh` and the Step 2, 3, 4, 7 and 8
 scripts print their options with `--help`.
 
 # Oxford Spires details
+
+## Canonical bag sensor
+
+The canonical bag has the same topics and fields for every dataset, but the lidar behind it differs:
+`qt64` (Hesai QT64, Oxford Spires: 64 rings, 104° vertical FOV, IMU 400 Hz) or `mid360` (Livox Mid-360,
+HUMANOID-LIO: non-repetitive scan, `ring` always 0, about −7..52° vertical FOV, IMU 200 Hz). The algorithms'
+canonical branches default to `qt64`. Some need other settings for `mid360`; those are listed per algorithm
+in `sensor_overrides.conf`, and Step 3 passes them to that algorithm's run script only.
+
+Step 3 takes the sensor from `CANONICAL_SENSOR`, else from the first word of `<data dir>/canonical_sensor`,
+else `qt64`, and prints it (`=== Canonical bag sensor: ... ===`). For a Mid-360 dataset, write the file once:
+
+```bash
+echo mid360 > ~/hdmapping-benchmark/data/canonical_sensor
+```
 
 ## Step 1 in detail
 

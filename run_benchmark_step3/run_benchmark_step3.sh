@@ -10,6 +10,9 @@ usage() {
   echo
   echo "The list of algorithms lives in algorithms.conf, one line per algorithm."
   echo "Set ONLY_ALGOS=\"id1 id2 ...\" (ids as spelled there) to run only those."
+  echo "The dataset's lidar is CANONICAL_SENSOR (qt64 | mid360), else the first word of"
+  echo "<ros1_bag dir>/canonical_sensor, else qt64; sensor_overrides.conf gives each"
+  echo "algorithm's settings for it."
   exit 1
 }
 
@@ -33,6 +36,10 @@ mkdir -p "$OUTPUT_DIR"
 CLONE_DIR="$HOME/hdmapping-benchmark"
 
 check_only_algos
+
+# The dataset's lidar picks per-algorithm settings from sensor_overrides.conf.
+SENSOR="$(canonical_sensor "$(dirname "$ROS1_BAG")")" || exit 1
+echo "=== Canonical bag sensor: $SENSOR ==="
 
 # Resolve the "input" column of algorithms.conf to an actual path.
 #
@@ -85,8 +92,10 @@ for category in ROS1 ROS2 NON_ROS; do
     sleep 5
 
     cd "$CLONE_DIR/$repo" || continue
-    echo "=== Running $id in $(pwd) on $INPUT ==="
-    "./$script" "$INPUT" "$OUTPUT"
+    # Settings for this algorithm only; see sensor_overrides.conf.
+    mapfile -t overrides < <(sensor_env "$id" "$SENSOR")
+    echo "=== Running $id in $(pwd) on $INPUT (sensor $SENSOR${overrides[*]:+: ${overrides[*]}}) ==="
+    env "${overrides[@]}" "./$script" "$INPUT" "$OUTPUT"
 
     cd "$CLONE_DIR" || exit
     echo "=== Finished $id ==="

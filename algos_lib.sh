@@ -78,3 +78,40 @@ run_script() {
         NON_ROS) echo "docker_session_run-$1.sh" ;;
     esac
 }
+
+# Sensors a canonical bag can come from; see sensor_overrides.conf.
+KNOWN_SENSORS="qt64 mid360"
+SENSOR_OVERRIDES_CONF="${SENSOR_OVERRIDES_CONF:-$ALGOS_LIB_DIR/sensor_overrides.conf}"
+
+# canonical_sensor <data_dir>
+# Prints the dataset's sensor: CANONICAL_SENSOR, else the first word of
+# <data_dir>/canonical_sensor, else qt64. Fails on an unknown value.
+canonical_sensor() {
+    local sensor="${CANONICAL_SENSOR:-}"
+    if [ -z "$sensor" ] && [ -f "$1/canonical_sensor" ]; then
+        sensor="$(awk 'NF { print $1; exit }' "$1/canonical_sensor")"
+    fi
+    sensor="${sensor:-qt64}"
+    if ! grep -qw -- "$sensor" <<< "$KNOWN_SENSORS"; then
+        echo "ERROR: unknown canonical sensor '$sensor' (known: $KNOWN_SENSORS)" >&2
+        return 1
+    fi
+    echo "$sensor"
+}
+
+# sensor_env <id> <sensor>
+# Prints the VAR=value settings of sensor_overrides.conf for that algorithm and
+# sensor, one per line (nothing when the algorithm needs none).
+sensor_env() {
+    [ -f "$SENSOR_OVERRIDES_CONF" ] || return 0
+    awk -F'|' -v id="$1" -v sensor="$2" '
+        /^[[:space:]]*#/ { next }
+        /^[[:space:]]*$/ { next }
+        {
+            for (i = 1; i <= NF; i++) { gsub(/^[ \t]+|[ \t]+$/, "", $i) }
+            if ($1 != sensor || $2 != id) next
+            n = split($3, kv, /[ \t]+/)
+            for (i = 1; i <= n; i++) if (kv[i] != "") print kv[i]
+        }
+    ' "$SENSOR_OVERRIDES_CONF"
+}

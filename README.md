@@ -330,7 +330,12 @@ even when trajectory processing is restricted to a subset.
 ### Step 5 Evaluate trajectories with evo
 
 Build `evo` and compute absolute and relative pose errors from `data/tum/`.
-A trajectory plot opens in the graphical session.
+The trajectory plot (tabs trajectories, xyz, rpy and speeds) opens in the
+graphical session. The trajectories tab shows every trajectory aligned to the
+ground truth, zoomed to the ground truth with a margin (zoom out to see
+diverged trajectories), and is also saved as `data/tum/trajectories.png`. A
+trajectory that never moves (e.g. LOAM-Livox) is aligned at its first pose,
+as in the APE table.
 
 #### Run with defaults
 
@@ -342,7 +347,8 @@ cd ~/hdmapping-benchmark/data
 #### Result
 
 Results in `data/tum/` include `table_ape.csv`, `table_rpe.csv`,
-`table_ape.tex`, `table_rpe.tex`, `ape_table_github.md` and `rpe_table_github.md`.
+`table_ape.tex`, `table_rpe.tex`, `ape_table_github.md`, `rpe_table_github.md`
+and `trajectories.png`.
 
 #### Arguments and defaults
 

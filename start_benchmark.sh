@@ -5,7 +5,7 @@ set -e
 usage() {
     echo "Usage: $0 [--bucket-size METERS] [--voxel-size METERS] [--threshold METERS] [--jobs N] [--no-force] [algo ...]"
     echo
-    echo "Runs the whole benchmark pipeline (steps 1-8)."
+    echo "Runs the whole benchmark pipeline (steps 1-9)."
     echo "Checks workspace setup, dataset and prerequisite Docker images first."
     echo "Optionally pass algorithm ids (the 'id' column of algorithms.conf) to"
     echo "clone, build, run and evaluate only those, e.g.:"
@@ -16,7 +16,8 @@ usage() {
     echo "These settings are independent and validated before any stage runs."
     echo "Use --jobs N for simultaneous Step 8 evaluations (default: 1; positive integer)."
     echo "Step 8 shows per-worker progress and merges reports after all workers finish."
-    echo "Steps 7 and 8 permanently replace selected results by default."
+    echo "Step 9 renders FARO and the Step 8 evaluated clouds into comparison images."
+    echo "Steps 7, 8 and 9 permanently replace selected results by default."
     echo "Use --no-force to preserve their existing results."
     echo "No algorithm ids = all algorithms. An unknown id aborts with the known list."
 }
@@ -95,7 +96,7 @@ for option, value, validator in (
         sys.exit(f"ERROR: invalid {option}: {error}")
 PY
 
-# Optional algorithm subset, exported so steps 2, 3, 4, 7 and 8 pick it up.
+# Optional algorithm subset, exported so steps 2, 3, 4, 7, 8 and 9 pick it up.
 if [[ ${#ALGORITHMS[@]} -gt 0 ]]; then
     export ONLY_ALGOS="${ALGORITHMS[*]}"
     echo "=== Restricting the benchmark to: $ONLY_ALGOS ==="
@@ -233,6 +234,13 @@ bash "$REPO_DIR/point_cloud_evaluation_step8/run_evaluation_step8.sh" \
     --voxel-size "$VOXEL_SIZE" \
     --threshold "$THRESHOLD" \
     --jobs "$JOBS" \
+    "${OVERWRITE_ARGS[@]}"
+
+sleep 5
+
+echo "=== Step 9: point_cloud_compare_step9 ==="
+bash "$REPO_DIR/point_cloud_compare_step9/run_compare_step9.sh" \
+    --data-dir "$DATA_DIR" \
     "${OVERWRITE_ARGS[@]}"
 
 echo "=== DONE ==="

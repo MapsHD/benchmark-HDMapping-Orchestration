@@ -1,9 +1,10 @@
 #!/bin/bash
 # Step 9 container entry point. Renders the Step 8 FARO reference and every cloud
 # Step 8 reported as evaluated from the same 14 orthographic views, using
-# cloud_visual_compare with its default options.
+# cloud_visual_compare with its default options except --resolution.
 #
 # Mounts: /evaluation (Step 8 output, read-only), /comparison (Step 9 output).
+# RESOLUTION: render size in full/ along the longer side (default: 8192).
 
 set -euo pipefail
 
@@ -12,6 +13,7 @@ OUTPUT=/comparison
 REFERENCE="$EVALUATION/reference/faro.ply"
 SUMMARY="$EVALUATION/evaluation_summary.csv"
 LOG="$OUTPUT/compare.log"
+RESOLUTION="${RESOLUTION:-8192}"
 
 source /workspace/algos_lib.sh
 check_only_algos
@@ -22,6 +24,15 @@ for path in "$REFERENCE" "$SUMMARY"; do
         exit 1
     fi
 done
+
+# OpenCL drivers the loader may use, chosen by run_compare_step9.sh --opencl.
+VENDORS="${OCL_ICD_VENDORS:-/etc/OpenCL/vendors}"
+icds=("$VENDORS"/*.icd)
+if [[ ! -f "${icds[0]}" ]]; then
+    echo "ERROR: this image has no OpenCL driver for the selected mode: $VENDORS" >&2
+    exit 1
+fi
+echo "OpenCL drivers: ${icds[*]##*/}"
 
 # Algorithm IDs whose last Step 8 status is "evaluated". The leading columns
 # (algorithm_id, registration_status, status) never contain commas. Python's csv
@@ -65,8 +76,9 @@ if [[ $count -eq 0 ]]; then
 fi
 
 echo "Reference: $REFERENCE"
-echo "Comparing $count Step 8 clouds; full log: $LOG"
+echo "Comparing $count Step 8 clouds at $RESOLUTION px; full log: $LOG"
 cloud_visual_compare \
     --reference "$REFERENCE" \
     "${compare_args[@]}" \
+    --resolution "$RESOLUTION" \
     --output-dir "$OUTPUT" 2>&1 | tee "$LOG"

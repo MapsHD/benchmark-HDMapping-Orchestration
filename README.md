@@ -77,11 +77,11 @@ Build the helper Docker images using the instructions in
 Helper source directories are not required if these images exist. Algorithm and
 evaluation images are built by the pipeline.
 
-A GPU is recommended but not required. PIN-SLAM and Step 9 use an NVIDIA GPU
-through the
+A GPU is recommended but not required. PIN-SLAM uses an NVIDIA GPU through the
 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-when available and otherwise fall back to CPU. All other algorithms and steps run
-on CPU.
+when available and otherwise falls back to CPU. Step 9 renders with OpenCL on an
+NVIDIA, Intel or AMD GPU, or on the CPU when no GPU is available. All other
+algorithms and steps run on CPU.
 
 ## Validate setup
 
@@ -136,7 +136,8 @@ the selection and print the known IDs.
 
 [start_benchmark.sh](start_benchmark.sh) validates setup and runs Steps 1-9.
 Step 9 runs last and renders FARO and every cloud Step 8 evaluated into
-comparison images; it has no settings of its own in the runner.
+comparison images; it has no settings of its own in the runner and uses
+`--opencl auto` (NVIDIA GPU, then Intel or AMD GPU, then CPU).
 The [optional utilities](#3-optional-utilities) are not part of this pipeline.
 
 ### Run with defaults
@@ -854,8 +855,10 @@ This stage renders the FARO reference and every cloud evaluated in Step 8 from
 the same 14 orthographic views. It then builds one mosaic per view with all clouds
 side by side, using `cloud_visual_compare` from
 [MapsHD/HDMapping-benchmark-pointcloud-visual-inspection](https://github.com/MapsHD/HDMapping-benchmark-pointcloud-visual-inspection)
-with its **default options**. Rendering is headless OpenCL; no GUI or X access is
-needed. The images are for visual inspection only; this stage computes no metrics.
+with its default options, except that each render is **8192 px** along its longer
+side (the tool's own default is 16384 px). Rendering is headless OpenCL; no GUI or
+X access is needed. The images are for visual inspection only; this stage computes
+no metrics.
 
 Views are fitted to FARO only, so every cloud appears with the same framing and
 scale. Gaps, doubled walls or drift therefore show up as differences from the
@@ -868,15 +871,17 @@ FARO image of the same view. There is no cropping or additional alignment.
   evaluated algorithm. Step 8 writes the summary only after all workers finish,
   so do not start Step 9 while Step 8 is still running.
 - Docker and internet access for the image build.
-- An NVIDIA GPU through the
-  [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-  is recommended. Without it, rendering falls back to the PoCL CPU OpenCL device,
-  which is much slower but completes. At the default resolution each render
-  allocates up to three 1 GiB OpenCL buffers. A device with a lower per-buffer
-  limit stops with an error that names the limit.
-- Disk space for 28 PNGs per cloud (14 renders up to 16384 px and 14 mosaic tiles)
-  plus 14 mosaics of up to 2 GiB uncompressed each. Check the size with a small
-  `ONLY_ALGOS` run before rendering all algorithms.
+- An OpenCL GPU is recommended but not required; see
+  [OpenCL device](#opencl-device). It can be an NVIDIA GPU through the
+  [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html),
+  or an Intel or AMD GPU with a working host kernel driver (`/dev/dri/renderD*`).
+  Without a GPU, rendering uses the PoCL CPU OpenCL device, which is much slower
+  but completes. Each render allocates up to three OpenCL buffers of 4 bytes per
+  pixel: 256 MiB each at 8192 px, 1 GiB each at 16384 px. A device with a lower
+  per-buffer limit stops with an error that names the limit.
+- Disk space for 28 PNGs per cloud (14 renders up to `--resolution` px and 14
+  mosaic tiles) plus 14 mosaics of up to 2 GiB uncompressed each. Check the size
+  with a small `ONLY_ALGOS` run before rendering all algorithms.
 - RAM for one cloud at a time, up to 3 GiB of images waiting to be encoded, and one
   mosaic in memory while it is built.
 
@@ -887,8 +892,8 @@ cd ~/hdmapping-benchmark/data
 ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_compare_step9/run_compare_step9.sh
 ```
 
-The script builds `hdmapping_point_cloud_compare`, picks the OpenCL device and
-renders into `<data-dir>/step9_comparison`.
+The script builds `hdmapping_point_cloud_compare`, picks the OpenCL device
+(`--opencl auto`) and renders into `<data-dir>/step9_comparison`.
 
 #### Run with options
 
@@ -905,12 +910,72 @@ Step 8's PLYs are full resolution, so Step 8's `--voxel-size` and `--threshold`
 do not change the images. Step 7's `--bucket-size` does, because it changes the
 registered clouds themselves.
 
+Render at the tool's full **16384 px** instead of the 8192 px default:
+
+```shell
+cd ~/hdmapping-benchmark/data
+~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_compare_step9/run_compare_step9.sh \
+    --resolution 16384
+```
+
+`--resolution` sets the size of the renders in `full/` only; mosaics keep the
+largest size the PNG writer allows.
+
 #### Run selected algorithms with defaults
 
 ```shell
 cd ~/hdmapping-benchmark/data
 ONLY_ALGOS="sr-lio pv-lio" ~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_compare_step9/run_compare_step9.sh
 ```
+
+#### Test without an NVIDIA GPU
+
+On a machine with an NVIDIA GPU, `--opencl` forces the other OpenCL paths, so
+they can be tested without a second machine. Use two algorithms and a separate
+output directory per device:
+
+```shell
+cd ~/hdmapping-benchmark/data
+STEP9=~/hdmapping-benchmark/benchmark-HDMapping-Orchestration/point_cloud_compare_step9/run_compare_step9.sh
+for device in cpu intel amd nvidia; do
+    ONLY_ALGOS="fast-lio dlo" "$STEP9" --opencl "$device" \
+        --output-dir "$HOME/hdmapping-benchmark/data/step9_test_$device"
+done
+grep -H 'OpenCL device' ~/hdmapping-benchmark/data/step9_test_*/compare.log
+```
+
+Drop `intel` or `amd` from the list if the machine has no such GPU. `cpu` matches
+a machine without any GPU. Each log should name the requested device, for example
+a `pthread` or `cpu` PoCL device for `cpu`. A missing driver or device fails that
+run instead of falling back to another device.
+
+To check that the other devices render the same images as the NVIDIA run, compare
+the outputs with the tool's `compare_outputs.py`, which needs `numpy` and `pillow`.
+Mosaics are built from the tiles, so comparing `full/` and `tile/` covers them:
+
+```shell
+mkdir -p ~/hdmapping-benchmark/step9_test_tools
+cd ~/hdmapping-benchmark/step9_test_tools
+python3 -m venv venv
+venv/bin/pip install numpy pillow
+git clone https://github.com/MapsHD/HDMapping-benchmark-pointcloud-visual-inspection.git tool
+
+cd ~/hdmapping-benchmark/data
+for device in cpu intel amd; do
+    for folder in full tile; do
+        echo "== $device $folder"
+        ~/hdmapping-benchmark/step9_test_tools/venv/bin/python \
+            ~/hdmapping-benchmark/step9_test_tools/tool/scripts/compare_outputs.py \
+            step9_test_nvidia/$folder step9_test_$device/$folder
+    done
+done
+```
+
+For each folder it prints `N identical, M differing or missing`, plus the pixel
+count and largest difference of each differing image. A few differing pixels
+between devices can come from floating-point rounding at point projection;
+missing images or large differences point to a device problem. Remove
+`step9_test_*` and `step9_test_tools` afterwards.
 
 #### Inputs and selection
 
@@ -930,21 +995,48 @@ using the evaluation's voxel size and threshold.
 PLYs must contain `x`, `y`, `z` and `intensity` vertex properties; Step 8's
 `laz_to_ply` output does.
 
-#### Execution and device
+#### OpenCL device
 
-The runner selects the GPU in the same way as PIN-SLAM. It uses the `nvidia`
-Docker runtime if one is registered, otherwise `--gpus all` if that works. If
-neither works, it prints a warning and runs on the CPU. The tool prefers a GPU
-OpenCL device and prints the chosen device on the first line of its output
-(`OpenCL device: ...`).
+`cloud_visual_compare` is vendor-neutral: it takes the first GPU on any OpenCL
+platform, otherwise any OpenCL device. It prints the chosen device on the first
+line of its output (`OpenCL device: ...`). The image contains these OpenCL drivers:
+
+| Driver | Devices |
+| --- | --- |
+| NVIDIA (`libnvidia-opencl.so.1`, mounted by the NVIDIA Container Toolkit) | NVIDIA GPUs |
+| Intel compute runtime (`intel-opencl-icd`) | Intel GPUs, integrated and Arc |
+| Mesa Rusticl (`mesa-opencl-icd`, `RUSTICL_ENABLE=radeonsi`) | AMD GPUs |
+| PoCL (`pocl-opencl-icd`) | CPU |
+
+`--opencl MODE` decides which devices the container gets and which drivers the
+OpenCL loader may use (through `OCL_ICD_VENDORS`):
+
+| Mode | Devices passed to the container | Drivers |
+| --- | --- | --- |
+| `auto` (default) | The NVIDIA GPU if the toolkit works; otherwise `/dev/dri`; otherwise none | All four |
+| `nvidia` | The NVIDIA GPU through the toolkit | NVIDIA |
+| `intel` | `/dev/dri` | Intel |
+| `amd` | `/dev/dri` | Rusticl |
+| `cpu` | None | PoCL |
+
+For NVIDIA, the runner uses the `nvidia` Docker runtime if one is registered,
+otherwise `--gpus all` if that works, in the same way as PIN-SLAM. For `/dev/dri`,
+it also adds the render nodes' group, because the container runs as the invoking
+user. In `auto`, PoCL remains available, so a GPU driver that finds no device
+falls back to the CPU. On a machine with several non-NVIDIA GPUs, `auto` takes the
+first GPU the loader reports; use `intel` or `amd` to choose. Explicit modes fail
+instead of falling back. The container prints the drivers it can use
+(`OpenCL drivers: ...`) before rendering. The full pipeline uses `auto`.
+
+#### Execution
 
 FARO is loaded first and the views are fitted to it. Then each cloud is loaded,
 rendered from every view and released before the next one. Mosaics are assembled
 from the saved tiles at the end. PNG encoding runs in up to four background threads.
 
-| `cloud_visual_compare` setting | Default used |
+| `cloud_visual_compare` setting | Value used |
 | --- | --- |
-| `--resolution` | `16384` px along the longer side of each view |
+| `--resolution` | `8192` px along the longer side of each view, set by the runner's `--resolution` (tool default: `16384`) |
 | `--mosaic-resolution` | `0`: the largest mosaic the 2 GiB PNG writer allows |
 | `--point-radius` | `0`: one pixel per point |
 | `--fit-fraction` | `0.9999`: each view contains at least 99.99% of FARO points |
@@ -974,7 +1066,8 @@ Intensity is scaled per cloud between its 1st and 99th percentile.
 - Views: `px`, `nx`, `py`, `ny`, `pz`, `nz` look along each axis from its
   positive or negative side. The eight corner views `px_py_pz` ... `nx_ny_nz`
   look diagonally from each corner of the FARO bounds.
-- `full/<label>_<view>.png`: each cloud rendered at full resolution.
+- `full/<label>_<view>.png`: each cloud rendered at `--resolution` px along the
+  longer side (8192 by default).
 - `tile/<label>_<view>.png`: the same view at mosaic tile size, used to build the
   mosaics.
 - `mosaic/<view>.png`: all clouds for one view in a grid, each tile labelled.
@@ -1017,6 +1110,8 @@ docker build --no-cache \
 | `--data-dir DIRECTORY` | Dataset directory, used for the default paths | `~/hdmapping-benchmark/data` |
 | `--evaluation-dir DIRECTORY` | Step 8 results | `<data-dir>/step8_evaluation` |
 | `--output-dir DIRECTORY` | Comparison images | `<data-dir>/step9_comparison` |
+| `--resolution PX` | Size of each render in `full/` along its longer side, `1024`-`65535`; mosaics are unaffected | `8192` |
+| `--opencl MODE` | OpenCL device: `auto`, `nvidia`, `intel`, `amd` or `cpu`; see [OpenCL device](#opencl-device) | `auto` |
 | `--no-force` | Preserve existing comparison results rather than replace them | Off |
 | `ONLY_ALGOS` | Selected algorithm IDs | All evaluated |
 | `HDMAPPING_BUILD_JOBS` | Image compilation parallelism | `2` |

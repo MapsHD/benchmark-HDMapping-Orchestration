@@ -57,10 +57,19 @@ FALLBACK_NOTE_MD = ("\\* never moved, so Umeyama (SE(3)) alignment is impossible
 FALLBACK_NOTE_TEX = ("* never moved, so Umeyama alignment is impossible; "
                      "aligned at the first pose instead.")
 
-# Trajectory files that hit DEGENERATE_ALIGNMENT, filled in by run_evo. The
-# evo_traj plot aligns every trajectory with -a too and aborts entirely on the
-# first such file, so run_evo_traj_plot leaves these out.
-UNALIGNABLE_FILES = set()
+# The trajectory plot is saved here (data/tum, next to the tables) and also
+# opened in a window when a display is available.
+TRAJ_PLOT_FILE = "trajectories.png"
+# The plot opens on the ground truth's bounding box, widened on every side by
+# this fraction of its larger side. Diverged trajectories leave the view; zoom
+# out in the window to see them.
+TRAJ_PLOT_MARGIN = 0.1
+
+
+def method_name_of(traj_file: str) -> str:
+    return os.path.basename(traj_file) \
+             .replace("output_hdmapping-", "") \
+             .replace("_trajectory_tum.txt", "")
 
 
 def evo_metrics(tool: str, ground_truth: str, traj_file: str, align_args: list[str]):
@@ -79,13 +88,10 @@ def run_evo(tool: str, ground_truth: str, traj_files: list[str],
     results = []
 
     for traj_file in traj_files:
-        method_name = os.path.basename(traj_file) \
-                        .replace("output_hdmapping-", "") \
-                        .replace("_trajectory_tum.txt", "")
+        method_name = method_name_of(traj_file)
 
         metrics, result = evo_metrics(tool, ground_truth, traj_file, ["-a"])
         if not metrics and DEGENERATE_ALIGNMENT in (result.stdout + result.stderr):
-            UNALIGNABLE_FILES.add(traj_file)
             how = " ".join(fallback_args) or "no alignment"
             print(f"\n--- {tool}: '{method_name}' never moves, so SE(3) alignment is impossible; retrying with {how}")
             metrics, result = evo_metrics(tool, ground_truth, traj_file, fallback_args)
@@ -110,60 +116,137 @@ def run_evo_ape(ground_truth: str, traj_files: list[str]) -> pd.DataFrame:
 def run_evo_rpe(ground_truth: str, traj_files: list[str]) -> pd.DataFrame:
     return run_evo("evo_rpe", ground_truth, traj_files, [], "")
 
+def display_available() -> bool:
+    """True if a window can be opened (the X display is reachable)."""
+    if not os.environ.get("DISPLAY"):
+        return False
+    try:
+        import tkinter
+        tkinter.Tk().destroy()
+        return True
+    except Exception:
+        return False
+
+
 def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
-    valid_files = []
+    """The plot of `evo_traj tum ... -a --ref ground_truth.tum --plot_mode xy -p`.
 
-    for f in sorted(traj_files):
-        if f in UNALIGNABLE_FILES:
-            print(f"Skipping never-moving trajectory (cannot be aligned): {f}")
-        elif os.path.isfile(f) and os.path.getsize(f) > 0:
-            valid_files.append(f)
-        else:
-            print(f"Skipping empty file: {f}")
+    Same tabbed window (trajectories, xyz, rpy, speeds), drawn with evo's own
+    plotting functions. Each trajectory is synced to the ground truth and
+    SE(3)-aligned exactly as evo_traj does it (nearest timestamps within
+    0.01 s, then Umeyama). Differences from evo_traj:
+      - evo_traj aborts the whole plot on a trajectory that never moves, so
+        such a trajectory is aligned at its first pose instead, like its APE
+        row, and plotted with the others;
+      - the trajectories tab opens on the ground truth (TRAJ_PLOT_MARGIN) and
+        is saved to TRAJ_PLOT_FILE, also without a display.
+    """
+    print("\n===== TRAJECTORY PLOT =====")
+    show = display_available()
 
-    if not valid_files:
-        print("No valid trajectory files found.")
-        return
+    # evo reads its settings and matplotlib its config from HOME, kept in
+    # data/tum as before.
+    os.environ["HOME"] = "/data"
+    os.environ["XDG_CONFIG_HOME"] = "/data/.config"
+    from evo.tools.settings import SETTINGS
+    # Must be set before evo.tools.plot is imported, which applies it. Without
+    # a display, TkAgg fails, and Agg still saves the picture.
+    SETTINGS.plot_backend = "TkAgg" if show else "Agg"
+    import itertools
+    import matplotlib.cm as cm
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    from evo.core import sync
+    from evo.tools import file_interface, plot
 
-    cmd = [
-        "evo_traj",
-        "tum",
-        *valid_files,
-        "-a",
-        "--ref", ground_truth,
-        "--plot_mode", "xy",
-        "-p",
-    ]
+    ref = file_interface.read_tum_trajectory_file(ground_truth)
 
-    env = os.environ.copy()
-    env["HOME"] = "/data"
-    env["XDG_CONFIG_HOME"] = "/data/.config"
+    aligned = []
+    for traj_file in sorted(traj_files):
+        method_name = method_name_of(traj_file)
+        if not (os.path.isfile(traj_file) and os.path.getsize(traj_file) > 0):
+            print(f"Skipping '{method_name}': empty file {traj_file}")
+            continue
+        try:
+            traj = file_interface.read_tum_trajectory_file(traj_file)
+            ref_synced, traj = sync.associate_trajectories(ref, traj, max_diff=0.01)
+            try:
+                traj.align(ref_synced, correct_scale=False)
+            except Exception as e:
+                if DEGENERATE_ALIGNMENT not in str(e):
+                    raise
+                traj.align_origin(ref_synced)
+                print(f"'{method_name}' never moves: aligned at the first pose")
+        except Exception as e:
+            print(f"Skipping '{method_name}': {e}")
+            continue
+        aligned.append((traj_file, method_name, traj))
 
-    result = subprocess.run(
-        cmd,
-        text=True,
-        capture_output=True,
-        cwd="/data",
-        env=env
-    )
-
-    print("\n===== TRAJECTORY EVALUATION (evo_traj) =====")
-
-    if result.returncode == 0:
-        print("Status: SUCCESS (run completed without errors)")
+    # Colors as evo_traj picks them.
+    if SETTINGS.plot_multi_cmap.lower() != "none":
+        cmap = getattr(cm, SETTINGS.plot_multi_cmap)
+        colors = iter(cmap(np.linspace(0, 1, len(aligned))))
     else:
-        print("Status: FAILED (error occurred during execution)")
-        print(f"Exit code: {result.returncode}")
+        colors = itertools.cycle(sns.color_palette())
 
-    print("\n Program output:")
-    print(result.stdout.strip() if result.stdout else "(no output)")
+    plot_collection = plot.PlotCollection("evo_traj - trajectory plot")
+    fig_xyz, axarr_xyz = plt.subplots(3, sharex="col", figsize=tuple(SETTINGS.plot_figsize))
+    fig_rpy, axarr_rpy = plt.subplots(3, sharex="col", figsize=tuple(SETTINGS.plot_figsize))
+    fig_traj = plt.figure(figsize=(16, 10))
+    fig_speed = plt.figure()
+    ax_traj = plot.prepare_axis(fig_traj, plot.PlotMode.xy)
 
-    if result.stderr:
-        print("\n Error details:")
-        print(result.stderr.strip())
-    else:
-        print("\n Error details:")
-        print("(no error message)")
+    def plot_over_time(traj, label: str, **style) -> None:
+        """The xyz, rpy and speeds tabs, as evo_traj draws them."""
+        plot.traj_xyz(axarr_xyz, traj, label=label, **style)
+        plot.traj_rpy(axarr_rpy, traj, label=label, **style)
+        try:
+            plot.speeds(fig_speed.gca(), traj, label=label, **style)
+        except Exception as e:
+            print(f"Can't plot speeds of {label}: {e}")
+
+    # zorder: on top of the trajectories, which would otherwise hide it.
+    ax_traj.plot(ref.positions_xyz[:, 0], ref.positions_xyz[:, 1],
+                 SETTINGS.plot_reference_linestyle, color=SETTINGS.plot_reference_color,
+                 alpha=SETTINGS.plot_reference_alpha, label="ground truth", zorder=3)
+    plot_over_time(ref, os.path.splitext(ground_truth)[0],
+                   style=SETTINGS.plot_reference_linestyle,
+                   color=SETTINGS.plot_reference_color,
+                   alpha=SETTINGS.plot_reference_alpha)
+
+    for traj_file, method_name, traj in aligned:
+        color = next(colors)
+        ax_traj.plot(traj.positions_xyz[:, 0], traj.positions_xyz[:, 1],
+                     SETTINGS.plot_trajectory_linestyle, color=color,
+                     alpha=SETTINGS.plot_trajectory_alpha, label=method_name)
+        # evo_traj's labels in the other tabs: the file name without extension.
+        plot_over_time(traj, os.path.splitext(os.path.basename(traj_file))[0],
+                       style=SETTINGS.plot_trajectory_linestyle, color=color,
+                       alpha=SETTINGS.plot_trajectory_alpha)
+    if "euler_angle_sequence" in SETTINGS and not SETTINGS.plot_usetex:
+        fig_rpy.text(0.0, 0.005, f"euler_angle_sequence: {SETTINGS.euler_angle_sequence}",
+                     fontsize=6)
+
+    gt_xy = ref.positions_xyz[:, :2]
+    low, high = gt_xy.min(axis=0), gt_xy.max(axis=0)
+    margin = TRAJ_PLOT_MARGIN * (high - low).max()
+    ax_traj.set_xlim(low[0] - margin, high[0] + margin)
+    ax_traj.set_ylim(low[1] - margin, high[1] + margin)
+    ax_traj.set_aspect("equal")
+    ax_traj.set_title(f"{len(aligned)} trajectories, SE(3)-aligned to the ground truth")
+    ax_traj.legend(loc="upper center", bbox_to_anchor=(0.5, -0.08), ncol=4,
+                   frameon=True, fontsize="small")
+
+    fig_traj.savefig(TRAJ_PLOT_FILE, dpi=150)
+    print(f"{len(aligned)} trajectories plotted, saved to data/tum/{TRAJ_PLOT_FILE}")
+
+    plot_collection.add_figure("trajectories", fig_traj)
+    plot_collection.add_figure("xyz", fig_xyz)
+    plot_collection.add_figure("rpy", fig_rpy)
+    plot_collection.add_figure("speeds", fig_speed)
+    if show:
+        print("Close the plot window to finish.")
+        plot_collection.show()
 
 def df_to_latex_table(df: pd.DataFrame, filename: str, caption: str, table_label: str) -> None:
     latex_df = df.copy()

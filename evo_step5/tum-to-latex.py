@@ -116,16 +116,37 @@ def run_evo_ape(ground_truth: str, traj_files: list[str]) -> pd.DataFrame:
 def run_evo_rpe(ground_truth: str, traj_files: list[str]) -> pd.DataFrame:
     return run_evo("evo_rpe", ground_truth, traj_files, [], "")
 
-def display_available() -> bool:
-    """True if a window can be opened (the X display is reachable)."""
-    if not os.environ.get("DISPLAY"):
-        return False
-    try:
-        import tkinter
-        tkinter.Tk().destroy()
-        return True
-    except Exception:
-        return False
+def show_plot_window(title: str, figures: dict) -> None:
+    """evo's PlotCollection.tabbed_tk_window (evo 1.38), for figures drawn with Agg.
+
+    Tk sizes the toolbar icons from the screen's physical size. Some X screens
+    report a size that makes that icon size invalid (matplotlib then fails with
+    "height and width must be > 0"), so Tk gets 96 DPI in that case.
+    """
+    import tkinter
+    from tkinter import ttk
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+    root = tkinter.Tk()
+    if not 0 < root.winfo_pixels("18p") < 256:
+        root.tk.call("tk", "scaling", 96 / 72)
+    root.title(title)
+    # quit if the window is deleted
+    root.protocol("WM_DELETE_WINDOW", root.quit)
+    nb = ttk.Notebook(root)
+    nb.grid(row=1, column=0, sticky="NESW")
+    for name, fig in figures.items():
+        tab = ttk.Frame(nb)
+        canvas = FigureCanvasTkAgg(fig, master=tab)
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+        toolbar = NavigationToolbar2Tk(canvas, tab)
+        toolbar.update()
+        canvas._tkcanvas.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+        nb.add(tab, text=name)
+    nb.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=True)
+    root.mainloop()
+    root.destroy()
 
 
 def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
@@ -139,19 +160,21 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
         such a trajectory is aligned at its first pose instead, like its APE
         row, and plotted with the others;
       - the trajectories tab opens on the ground truth (TRAJ_PLOT_MARGIN) and
-        is saved to TRAJ_PLOT_FILE, also without a display.
+        is saved to TRAJ_PLOT_FILE, also without a display;
+      - a window that cannot be opened is reported and step 5 goes on, as it
+        did when evo_traj ran in its own process.
     """
     print("\n===== TRAJECTORY PLOT =====")
-    show = display_available()
 
     # evo reads its settings and matplotlib its config from HOME, kept in
     # data/tum as before.
     os.environ["HOME"] = "/data"
     os.environ["XDG_CONFIG_HOME"] = "/data/.config"
     from evo.tools.settings import SETTINGS
-    # Must be set before evo.tools.plot is imported, which applies it. Without
-    # a display, TkAgg fails, and Agg still saves the picture.
-    SETTINGS.plot_backend = "TkAgg" if show else "Agg"
+    # Must be set before evo.tools.plot is imported, which applies it. The
+    # figures are drawn without a display, so the picture is saved whatever
+    # the display; show_plot_window shows them afterwards.
+    SETTINGS.plot_backend = "Agg"
     import itertools
     import matplotlib.cm as cm
     import matplotlib.pyplot as plt
@@ -189,7 +212,6 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
     else:
         colors = itertools.cycle(sns.color_palette())
 
-    plot_collection = plot.PlotCollection("evo_traj - trajectory plot")
     fig_xyz, axarr_xyz = plt.subplots(3, sharex="col", figsize=tuple(SETTINGS.plot_figsize))
     fig_rpy, axarr_rpy = plt.subplots(3, sharex="col", figsize=tuple(SETTINGS.plot_figsize))
     fig_traj = plt.figure(figsize=(16, 10))
@@ -240,13 +262,15 @@ def run_evo_traj_plot(ground_truth: str, traj_files: list[str]) -> None:
     fig_traj.savefig(TRAJ_PLOT_FILE, dpi=150)
     print(f"{len(aligned)} trajectories plotted, saved to data/tum/{TRAJ_PLOT_FILE}")
 
-    plot_collection.add_figure("trajectories", fig_traj)
-    plot_collection.add_figure("xyz", fig_xyz)
-    plot_collection.add_figure("rpy", fig_rpy)
-    plot_collection.add_figure("speeds", fig_speed)
-    if show:
+    if not os.environ.get("DISPLAY"):
+        return
+    figures = {"trajectories": fig_traj, "xyz": fig_xyz, "rpy": fig_rpy, "speeds": fig_speed}
+    try:
         print("Close the plot window to finish.")
-        plot_collection.show()
+        show_plot_window("evo_traj - trajectory plot", figures)
+    except Exception as e:
+        print(f"Could not open the plot window ({type(e).__name__}: {e}); "
+              f"the trajectories tab is saved as data/tum/{TRAJ_PLOT_FILE}.")
 
 def df_to_latex_table(df: pd.DataFrame, filename: str, caption: str, table_label: str) -> None:
     latex_df = df.copy()

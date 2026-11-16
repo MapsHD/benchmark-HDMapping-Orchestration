@@ -6,7 +6,7 @@ usage() {
     echo "Usage: $0 [--dry-run]"
     echo
     echo "Clean ~/hdmapping-benchmark, preserving this repository, mandeye_to_bag,"
-    echo "livox_bag_aggregate, and data/{reg-1.bag,HDMappingGroundTruth,TLS-FARO-Focus}."
+    echo "livox_bag_aggregate, and data/{reg-1.bag,raw,HDMappingGroundTruth,TLS-FARO-Focus}."
     echo "Prints deletion targets and requires typing CLEAN to confirm."
     echo "Use --dry-run to preview without deleting. Stop benchmark jobs first."
     echo "Docker resources and files outside the workspace are not removed."
@@ -78,6 +78,7 @@ PRESERVED=(
     "$WORKSPACE/mandeye_to_bag"
     "$WORKSPACE/livox_bag_aggregate"
     "$DATA_DIR/reg-1.bag"
+    "$DATA_DIR/raw"
     "$DATA_DIR/HDMappingGroundTruth"
     "$DATA_DIR/TLS-FARO-Focus"
 )

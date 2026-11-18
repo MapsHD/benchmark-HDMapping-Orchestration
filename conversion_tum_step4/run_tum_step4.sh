@@ -43,7 +43,14 @@ for alg in $(algo_ids); do
 done
 
 mkdir -p "$HOME/hdmapping-benchmark/data/tum"
-cp ground_truth.tum "$HOME/hdmapping-benchmark/data/tum/"
+# Prefer the ground truth shipped with the dataset (download_data.sh puts it
+# there); fall back to the copy kept in this directory.
+DATASET_GT="$DATA_DIR/HDMappingGroundTruth/all_tum_files/lio_result_0_trajectory_tum.txt"
+if [ -s "$DATASET_GT" ]; then
+    cp "$DATASET_GT" "$HOME/hdmapping-benchmark/data/tum/ground_truth.tum"
+else
+    cp ground_truth.tum "$HOME/hdmapping-benchmark/data/tum/"
+fi
 
 docker run --rm -it \
     --user 1000:1000 \

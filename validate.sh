@@ -28,8 +28,12 @@ WORKSPACE="$HOME/hdmapping-benchmark"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 DATA_DIR="$WORKSPACE/data"
 # Oxford-Spires: the sequence comes from start_benchmark.sh.
-SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
-NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
+if [[ "${DATASET:-oxford}" == kitti ]]; then
+    NAME="kitti-${KITTI_SEQUENCE:-07}"
+else
+    SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
+    NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
+fi
 SESSION="$DATA_DIR/HDMappingGroundTruth/lio_result_0/session.mjs"
 PASSED=0
 FAILED=0
@@ -63,9 +67,9 @@ check_file() {
 }
 
 echo "=== Full-automation setup validation ==="
-for path in \
-    "$WORKSPACE" "$REPO_DIR" "$DATA_DIR" \
-    "$DATA_DIR/HDMappingGroundTruth" "$DATA_DIR/TLS-FARO-Focus"; do
+DIRS=("$WORKSPACE" "$REPO_DIR" "$DATA_DIR" "$DATA_DIR/HDMappingGroundTruth")
+[[ "${DATASET:-oxford}" == kitti ]] || DIRS+=("$DATA_DIR/TLS-FARO-Focus")
+for path in "${DIRS[@]}"; do
     check_directory "$path"
 done
 for path in "$WORKSPACE" "$DATA_DIR"; do
@@ -80,7 +84,8 @@ check_file "$DATA_DIR/$NAME-ros2/metadata.yaml"
 check_file "$DATA_DIR/ground_truth.tum"
 check_directory "$DATA_DIR/$NAME-hdmapping"
 check_file "$SESSION"
-check_file "$DATA_DIR/TLS-FARO-Focus/map_gt_0.01.laz"
+# KITTI has no TLS map (no steps 7-8).
+[[ "${DATASET:-oxford}" == kitti ]] || check_file "$DATA_DIR/TLS-FARO-Focus/map_gt_0.01.laz"
 
 PYTHON=""
 if command -v python3 >/dev/null 2>&1; then

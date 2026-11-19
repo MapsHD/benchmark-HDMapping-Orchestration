@@ -74,8 +74,17 @@ done
 
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
-SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
-NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
+# DATASET=oxford (default) or kitti (KITTI_SEQUENCE, default 07; no TLS map, so no steps 7-8).
+DATASET="${DATASET:-oxford}"
+export DATASET
+if [[ "$DATASET" == kitti ]]; then
+    export KITTI_SEQUENCE="${KITTI_SEQUENCE:-07}"
+    SEQUENCE="$KITTI_SEQUENCE"
+    NAME="kitti-$KITTI_SEQUENCE"
+else
+    SEQUENCE="${OXFORD_SPIRES_SEQUENCE:-2024-03-12-keble-college-02}"
+    NAME="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}-//' <<<"$SEQUENCE")"
+fi
 DATA_DIR=~/hdmapping-benchmark/data
 DOWNLOAD_DIR="${OXFORD_SPIRES_DOWNLOAD_DIR:-$DATA_DIR/download}"
 STEP8_TIMEOUT="${STEP8_TIMEOUT:-900}"
@@ -113,13 +122,22 @@ fi
 
 cd "$DATA_DIR"
 
-echo "=== Step 1: prepare_data_step1 (Oxford Spires $SEQUENCE -> canonical bag) ==="
 OXFORD="$REPO_DIR/prepare_data_step1/oxford_spires"
-if [ -f "$DATA_DIR/$NAME.bag" ] && [ -d "$DATA_DIR/$NAME-ros2" ] && [ -d "$DATA_DIR/$NAME-hdmapping" ] && \
+if [[ "$DATASET" == kitti ]]; then
+    echo "=== Step 1: prepare_data_step1 (KITTI $SEQUENCE -> canonical bag) ==="
+    if [ -f "$DATA_DIR/$NAME.bag" ] && [ -d "$DATA_DIR/$NAME-ros2" ] && [ -d "$DATA_DIR/$NAME-hdmapping" ] && \
+       [ -f "$DATA_DIR/ground_truth.tum" ] && [ -f "$DATA_DIR/HDMappingGroundTruth/lio_result_0/session.mjs" ]; then
+        echo "Step 1 outputs exist. Skipping."
+    else
+        bash "$REPO_DIR/prepare_data_step1/kitti/prepare.sh" "$SEQUENCE" "$DATA_DIR/download/kitti" "$DATA_DIR"
+    fi
+elif [ -f "$DATA_DIR/$NAME.bag" ] && [ -d "$DATA_DIR/$NAME-ros2" ] && [ -d "$DATA_DIR/$NAME-hdmapping" ] && \
    [ -f "$DATA_DIR/ground_truth.tum" ] && [ -f "$DATA_DIR/HDMappingGroundTruth/lio_result_0/session.mjs" ] && \
    [ -f "$DATA_DIR/TLS-FARO-Focus/map_gt_0.01.laz" ]; then
+    echo "=== Step 1: prepare_data_step1 (Oxford Spires $SEQUENCE -> canonical bag) ==="
     echo "Step 1 outputs exist. Skipping."
 else
+    echo "=== Step 1: prepare_data_step1 (Oxford Spires $SEQUENCE -> canonical bag) ==="
     # Builds the images and downloads what is missing, then converts.
     bash "$OXFORD/prepare.sh" "$SEQUENCE" "$DOWNLOAD_DIR" "$DATA_DIR" "$NAME"
 fi
@@ -177,21 +195,25 @@ fi
 
 sleep 5
 
-echo "=== Step 7: registration_step7 ==="
-bash "$REPO_DIR/registration_step7/run_registration_step7.sh" \
-    --data-dir "$DATA_DIR" \
-    --bucket-size "$BUCKET_SIZE" \
-    "${OVERWRITE_ARGS[@]}"
+if [[ "$DATASET" == kitti ]]; then
+    echo "=== Steps 7-8 skipped: KITTI has no TLS map ==="
+else
+    echo "=== Step 7: registration_step7 ==="
+    bash "$REPO_DIR/registration_step7/run_registration_step7.sh" \
+        --data-dir "$DATA_DIR" \
+        --bucket-size "$BUCKET_SIZE" \
+        "${OVERWRITE_ARGS[@]}"
 
-sleep 5
+    sleep 5
 
-echo "=== Step 8: point_cloud_evaluation_step8 ==="
-bash "$REPO_DIR/point_cloud_evaluation_step8/run_evaluation_step8.sh" \
-    --data-dir "$DATA_DIR" \
-    --voxel-size "$VOXEL_SIZE" \
-    --threshold "$THRESHOLD" \
-    --jobs "$JOBS" \
-    --timeout "$STEP8_TIMEOUT" \
-    "${OVERWRITE_ARGS[@]}"
+    echo "=== Step 8: point_cloud_evaluation_step8 ==="
+    bash "$REPO_DIR/point_cloud_evaluation_step8/run_evaluation_step8.sh" \
+        --data-dir "$DATA_DIR" \
+        --voxel-size "$VOXEL_SIZE" \
+        --threshold "$THRESHOLD" \
+        --jobs "$JOBS" \
+        --timeout "$STEP8_TIMEOUT" \
+        "${OVERWRITE_ARGS[@]}"
+fi
 
 echo "=== DONE ==="

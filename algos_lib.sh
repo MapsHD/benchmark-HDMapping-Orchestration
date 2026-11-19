@@ -80,7 +80,7 @@ run_script() {
 }
 
 # Sensors a canonical bag can come from; see sensor_overrides.conf.
-KNOWN_SENSORS="qt64 mid360"
+KNOWN_SENSORS="qt64 mid360 hdl64"
 SENSOR_OVERRIDES_CONF="${SENSOR_OVERRIDES_CONF:-$ALGOS_LIB_DIR/sensor_overrides.conf}"
 
 # canonical_sensor <data_dir>

@@ -99,42 +99,6 @@ else
     mv "$DATA_DIR/$SESSION.partial" "$DATA_DIR/$SESSION"
 fi
 
-# HDMapping lidar odometry never uses the first chunk of a session (on Mandeye data it is the
-# device standing still). KITTI drives from the first scan, so split the first HEAD_CHUNK_S
-# seconds off into a chunk of their own: only those are dropped, not a whole 15-20 s chunk.
-# The other chunks are renumbered. Done once (marker file); the bags do not depend on it.
-HEAD_CHUNK_S="${HEAD_CHUNK_S:-0.5}"
-if [[ ! -f "$DATA_DIR/$SESSION/.head_chunk_split" ]]; then
-    echo "--- splitting the first ${HEAD_CHUNK_S} s of $SESSION into a chunk of its own"
-    rm -rf "$DATA_DIR/$SESSION/preview" "$DATA_DIR/$SESSION/cache"
-    py -c '
-import glob, os, sys
-import laspy, numpy as np
-d, head = sys.argv[1], float(sys.argv[2])
-laz = sorted(glob.glob(os.path.join(d, "lidar[0-9][0-9][0-9][0-9].laz")))
-imu = sorted(glob.glob(os.path.join(d, "imu[0-9][0-9][0-9][0-9].csv")))
-assert len(laz) == len(imu) and laz, "expected matching lidarNNNN.laz / imuNNNN.csv"
-for i in reversed(range(len(laz))):  # shift every chunk up by one
-    os.rename(laz[i], os.path.join(d, "lidar%04d.laz" % (i + 1)))
-    os.rename(imu[i], os.path.join(d, "imu%04d.csv" % (i + 1)))
-src = laspy.read(os.path.join(d, "lidar0001.laz"))
-t_split = src.gps_time.min() + head
-m = src.gps_time < t_split
-for name, sel in (("lidar0000.laz", m), ("lidar0001.laz", ~m)):
-    out = laspy.LasData(src.header)
-    out.points = src.points[sel]
-    out.write(os.path.join(d, name))
-lines = open(os.path.join(d, "imu0001.csv")).read().splitlines()
-hdr, rows = lines[0], lines[1:]
-early = [r for r in rows if int(r.split()[0]) * 1e-9 < t_split]
-late = rows[len(early):]
-for name, part in (("imu0000.csv", early), ("imu0001.csv", late)):
-    open(os.path.join(d, name), "w").write("\n".join([hdr] + part) + "\n")
-print(f"head chunk: {m.sum()} points, {len(early)} IMU samples; {len(laz) + 1} chunks")
-' "/data/$SESSION" "$HEAD_CHUNK_S"
-    touch "$DATA_DIR/$SESSION/.head_chunk_split"
-fi
-
 # --- canonical bags -------------------------------------------------------------
 CANONICAL=(--lidar-type canonical --msg_hz "$MSG_HZ" --imu-acc-unit ms2
            --lidar-topic /lidar/pointcloud --imu-topic /lidar/imu --frame-id lidar)

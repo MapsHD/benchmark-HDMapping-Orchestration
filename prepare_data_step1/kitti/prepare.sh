@@ -120,11 +120,14 @@ fi
 
 # --- ground truth for steps 4-6 ---------------------------------------------------
 # The bag's ground truth is in the Velodyne frame but stamped from 0 (KITTI odometry
-# times.txt); time 0 is the bag's first scan. Shift it to the scan stamps and check that
-# every pose then lands on a scan.
+# times.txt), and the bag starts a few scans before the odometry sequence: time 0 is not
+# the bag's first scan (07: about 0.48 s later). Every whole-scan shift fits the scan
+# stamps, so the offset is found from the motion instead: the ground truth comes from the
+# OXTS unit that is also the bag's IMU, so the ground truth's yaw rate must match the
+# gyro's z rate. The offset is fitted to 1 ms and the fit must be tight.
 if [[ ! -f "$DATA_DIR/ground_truth.tum" ]]; then
     py -c '
-import struct, sys
+import glob, os, struct, sys
 import numpy as np
 from rosbags.rosbag1 import Reader
 with Reader(sys.argv[1]) as r:
@@ -133,18 +136,28 @@ with Reader(sys.argv[1]) as r:
     for _, _, raw in r.messages(connections=conns):
         sec, nsec = struct.unpack_from("<II", raw, 4)  # header: seq, stamp
         stamps.append(sec + nsec * 1e-9)
-stamps = np.sort(np.array(stamps))
+t0 = min(stamps)
 gt = np.loadtxt(sys.argv[2], comments="#")
-t = stamps[0] + gt[:, 0]
-i = np.clip(np.searchsorted(stamps, t), 1, len(stamps) - 1)
-d = np.minimum(np.abs(stamps[i] - t), np.abs(stamps[i - 1] - t))
-print(f"ground truth: {len(gt)} poses, shifted by {stamps[0]:.6f} s; max distance to a scan stamp {d.max() * 1e3:.3f} ms")
-if d.max() > 0.005:
-    sys.exit("ERROR: ground truth does not match the scan stamps")
-with open(sys.argv[3], "w") as f:
-    for ti, row in zip(t, gt):
+# gyro z from the session (IMU rotated into the Velodyne frame, rad/s)
+imu = np.vstack([np.loadtxt(f, skiprows=1, ndmin=2)
+                 for f in sorted(glob.glob(os.path.join(sys.argv[3], "imu[0-9][0-9][0-9][0-9].csv")))])
+it, gz = imu[:, 0] * 1e-9, imu[:, 7]
+qx, qy, qz, qw = gt[:, 4:8].T
+yaw = np.unwrap(np.arctan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)))
+def misfit(off):
+    t = t0 + gt[:, 0] + off
+    return np.sqrt(np.mean((np.interp(t, it, gz) - np.gradient(yaw, t)) ** 2))
+offs = np.arange(-1.0, 1.0005, 0.001)
+err = np.array([misfit(o) for o in offs])
+off = offs[err.argmin()]
+print(f"ground truth: {len(gt)} poses; time 0 = first scan {t0:.6f} s + {off:+.3f} s "
+      f"(gyro z vs ground-truth yaw rate: rms {err.min():.4f} rad/s, {misfit(0.0):.4f} without the offset)")
+if err.min() > 0.01:
+    sys.exit("ERROR: the ground truth yaw rate does not match the IMU at any offset within +-1 s")
+with open(sys.argv[4], "w") as f:
+    for ti, row in zip(t0 + gt[:, 0] + off, gt):
         f.write(f"{ti:.9f} " + " ".join(f"{x:.9f}" for x in row[1:8]) + "\n")
-' "/download/$BAG_IN" "/download/$GT_IN" /data/ground_truth.tum.partial
+' "/download/$BAG_IN" "/download/$GT_IN" "/data/$SESSION" /data/ground_truth.tum.partial
     mv "$DATA_DIR/ground_truth.tum.partial" "$DATA_DIR/ground_truth.tum"
 fi
 GT_SESSION=HDMappingGroundTruth/lio_result_0
